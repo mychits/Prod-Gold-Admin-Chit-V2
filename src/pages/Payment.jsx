@@ -25,7 +25,7 @@ const Payment = () => {
   const [selectedAuctionGroupId, setSelectedAuctionGroupId] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [userName, setUserName] = useState("");
-
+  const [viewLoader, setViewLoader] = useState(false);
   const [filteredAuction, setFilteredAuction] = useState([]);
   const [groupInfo, setGroupInfo] = useState({});
   const [showModal, setShowModal] = useState(false);
@@ -834,13 +834,14 @@ const Payment = () => {
       setLoading(true);
       setShowModalView(true);
       setCurrentGroupId(groupId);
-
+      setViewLoader(true);
       const response = await api.get(`/payment/get-payment-by-id/${groupId}`);
       setCurrentViewGroup(response.data);
     } catch (error) {
       console.error("Error viewing Payment:", error);
     } finally {
       setLoading(false);
+      setViewLoader(false);
     }
   };
 
@@ -1099,11 +1100,12 @@ const Payment = () => {
                           return (
                             <section className="bg-white shadow-md rounded-lg p-4 space-y-2 border border-gray-200 ">
                               <div className="text-gray-800 font-semibold">
-                                Name:{" "}
-                                <span className="font-normal">
-                                  {payment.user_id?.full_name}
+                                Payment Date:{" "}
+                                <span className="font-bold">
+                                  {payment?.pay_date}
                                 </span>
                               </div>
+
                               {payment.group_id && (
                                 <div className="text-gray-800 font-semibold">
                                   Group:{" "}
@@ -1133,9 +1135,9 @@ const Payment = () => {
                                 </span>
                               </div>
                               <div className="text-gray-800 font-semibold">
-                                Payment Date:{" "}
-                                <span className="font-bold">
-                                  {payment?.pay_date}
+                                Name:{" "}
+                                <span className="font-normal">
+                                  {payment.user_id?.full_name}
                                 </span>
                               </div>
                             </section>
@@ -1313,10 +1315,10 @@ const Payment = () => {
                         <option value="online">Online</option>
                         {modifyPayment && (
                           <>
-                          <option value="others">Suspense</option>
-                          <option value="credit">Credit</option>
-                          <option value="adjustment">Adjustment</option>
-                          <option value="others">Others</option>
+                            <option value="others">Suspense</option>
+                            <option value="credit">Credit</option>
+                            <option value="adjustment">Adjustment</option>
+                            <option value="others">Others</option>
                           </>
                         )}
                       </select>
@@ -1823,6 +1825,7 @@ const Payment = () => {
               onOk={() => setShowModalView(false)}
               onReload={() => handleViewModalOpen(currentGroupId)}
               footer={<div></div>}
+              loading={viewLoader}
             >
               <h3 className="mb-4 text-xl font-bold text-gray-900">
                 Payment Details
@@ -1847,7 +1850,10 @@ const Payment = () => {
                 <div className="mb-3 flex gap-x-2">
                   <strong>Bid Amount:</strong>{" "}
                   {currentViewGroup?.group_id?.group_value -
-                    currentViewGroup?.win_amount}
+                  currentViewGroup?.win_amount
+                    ? currentViewGroup?.group_id?.group_value -
+                      currentViewGroup?.win_amount
+                    : ""}
                 </div>
                 <div className="mb-3 flex gap-x-2">
                   <strong>Commission:</strong> {currentViewGroup?.commission}
