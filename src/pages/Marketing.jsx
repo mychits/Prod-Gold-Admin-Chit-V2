@@ -1,27 +1,27 @@
-import React, { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import Sidebar from "../components/layouts/Sidebar";
 import { FaWhatsapp } from "react-icons/fa";
 import { RiMoneyRupeeCircleLine } from "react-icons/ri";
 const subMenus = [
   {
+    key:"#1",
     title: "Promotion Login",
     link: "https://app.whatsapppromotion.net/login",
     icon: <FaWhatsapp size={20} />,
     newTab:true
   },
-  {
+  { key:"#2",
     title: "Advertisement",
     link: "/marketing/what-add",
     icon: <FaWhatsapp size={20} />,
   },
-  {
+  { key:"#3",
     title: "Failed Users",
     link: "/marketing/failed-whatuser",
     red: true,
     icon: <FaWhatsapp size={20} className="text-red-00" />,
   },
-  {
+  { key:"#4",
     title: "Due Message",
     link: "/marketing/due-message",
    icon:<RiMoneyRupeeCircleLine  size={20} className="text-red-00"/>
@@ -35,8 +35,9 @@ const Marketing = () => {
         <Sidebar />
         <div className="flex min-h-screen ">
           <div className="w-[300px] bg-gray-50 min-h-screen  p-4">
-            {subMenus.map(({ title, link, icon, red,newTab }) => (
+            {subMenus.map(({key, title, link, icon, red,newTab }) => (
               <NavLink
+              key={key}
               target={`${newTab?"_blank":"_self"}`} 
                 className={({ isActive }) =>
                   `my-2 flex items-center gap-2 font-medium rounded-md hover:bg-gray-300  p-3 ${

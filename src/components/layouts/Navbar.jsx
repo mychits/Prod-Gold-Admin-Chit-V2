@@ -11,18 +11,18 @@ import GlobalSearchBar from "../search/GlobalSearchBar";
 import { CgProfile } from "react-icons/cg";
 import { Card, Button, Input } from "antd";
 const Navbar = ({
-  onGlobalSearchChangeHandler = () => { },
+  onGlobalSearchChangeHandler = () => {},
   visibility = false,
 }) => {
   const [adminName, setAdminName] = useState("");
   const [onload, setOnload] = useState(true);
 
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setOnload(false);
-  }, 100);
-  return () => clearTimeout(timer);
-}, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setOnload(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
   useEffect(() => {
     try {
       const usr = localStorage.getItem("user");
@@ -33,20 +33,21 @@ useEffect(() => {
     } catch (e) {
       console.error("Failed to parse user from localStorage:", e);
     }
-  },[]);
+  }, []);
 
   const [open, setOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   return (
     <>
-
       <nav className=" w-full fixed  top-0 left-0 z-50 bg-white shadow-md">
-        <div  className={`
+        <div
+          className={`
     flex justify-between items-center py-2 px-10
     transition-all duration-700 ease-out transform
-    ${onload ? 'opacity-0 -translate-y-5' : 'opacity-100 translate-y-0'}
-  `}>
+    ${onload ? "opacity-0 -translate-y-5" : "opacity-100 translate-y-0"}
+  `}
+        >
           <div className="text-2xl flex items-center gap-2 font-bold py-4 uppercase">
             <AiTwotoneGold />
             <p>MyChits</p>
@@ -59,69 +60,79 @@ useEffect(() => {
             />
           </div>
 
-
           <NavLink
             className={({ isActive }) =>
-              isActive
-                ? "text-white font-bold "
-                : "text-white font-medium "
+              isActive ? "text-white font-bold " : "text-white font-medium "
             }
             to={"/reports/group-report"}
           >
-            {({ isActive }) => <Button
-
-              className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4  border ${isActive ? "bg-blue-200 text-blue-900 font-bold" : "font-semibold"}  `}>
-              Group Report
-            </Button>}
+            {({ isActive }) => (
+              <Button
+                className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4  border ${
+                  isActive
+                    ? "bg-blue-200 text-blue-900 font-bold"
+                    : "font-semibold"
+                }  `}
+              >
+                Group Report
+              </Button>
+            )}
           </NavLink>
-
 
           <NavLink
             className={({ isActive }) =>
-              isActive
-                ? "text-white font-bold"
-                : "text-white font-medium "
+              isActive ? "text-white font-bold" : "text-white font-medium "
             }
             to={"/reports/daybook"}
           >
-            {({ isActive }) => <Button
-
-              className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4  border ${isActive ? "bg-blue-200 text-blue-900 font-bold" : "font-semibold"}  `}>
-
-              Day Book
-            </Button>}
+            {({ isActive }) => (
+              <Button
+                className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4  border ${
+                  isActive
+                    ? "bg-blue-200 text-blue-900 font-bold"
+                    : "font-semibold"
+                }  `}
+              >
+                Day Book
+              </Button>
+            )}
           </NavLink>
           <NavLink
             className={({ isActive }) =>
-              isActive
-                ? "text-white font-bold"
-                : "text-white font-medium "
+              isActive ? "text-white font-bold" : "text-white font-medium "
             }
             to={"/reports/receipt"}
           >
-            {({ isActive }) => <Button
-
-              className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4  border ${isActive ? "bg-blue-200 text-blue-900 font-bold" : "font-semibold"}  `}>
-
-              Receipt Report
-            </Button>}
+            {({ isActive }) => (
+              <Button
+                className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4  border ${
+                  isActive
+                    ? "bg-blue-200 text-blue-900 font-bold"
+                    : "font-semibold"
+                }  `}
+              >
+                Receipt Report
+              </Button>
+            )}
           </NavLink>
-
 
           <NavLink
             className={({ isActive }) =>
-              isActive
-                ? "text-white font-bold"
-                : "text-white font-medium"
+              isActive ? "text-white font-bold" : "text-white font-medium"
             }
             to={"/reports/user-report"}
           >
-            {({ isActive }) => <Button
-
-              className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4  border ${isActive ? "bg-blue-200 text-blue-900 font-bold" : "font-semibold"}  `}>
-
-              Customer Report
-            </Button>}
+            {({ isActive }) => (
+              <Button
+                className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4  border ${
+                  isActive
+                    ? "bg-blue-200 text-blue-900 font-bold"
+                    : "font-semibold"
+                }  `}
+              >
+                Customer Report
+              </Button>
+            )}
           </NavLink>
 
           {/* <NavLink
@@ -136,33 +147,39 @@ useEffect(() => {
           </NavLink> */}
           <NavLink
             className={({ isActive }) =>
-              isActive
-                ? "text-white font-bold"
-                : "text-white font-medium"
+              isActive ? "text-white font-bold" : "text-white font-medium"
             }
             to={"/reports/employee-report"}
           >
-            {({ isActive }) => <Button
-
-              className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4 border ${isActive ? "bg-blue-200 text-blue-900 font-bold" : "font-semibold"}  `}>
-
-              Employee Report
-            </Button>}
+            {({ isActive }) => (
+              <Button
+                className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4 border ${
+                  isActive
+                    ? "bg-blue-200 text-blue-900 font-bold"
+                    : "font-semibold"
+                }  `}
+              >
+                Employee Report
+              </Button>
+            )}
           </NavLink>
           <NavLink
             className={({ isActive }) =>
-              isActive
-                ? "text-white font-bold"
-                : "text-white font-medium"
+              isActive ? "text-white font-bold" : "text-white font-medium"
             }
             to={"/reports/lead-report"}
           >
-            {({ isActive }) => <Button
-
-              className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4 border ${isActive ? "bg-blue-200 text-blue-900 font-bold" : "font-semibold"}  `}>
-
-              Lead Report
-            </Button>}
+            {({ isActive }) => (
+              <Button
+                className={` pl-5  pr-4 py-2  w-30 h-12 rounded-full  focus:rounded-full px-4 border ${
+                  isActive
+                    ? "bg-blue-200 text-blue-900 font-bold"
+                    : "font-semibold"
+                }  `}
+              >
+                Lead Report
+              </Button>
+            )}
           </NavLink>
 
           {/* <div className="hidden md:block">
@@ -214,7 +231,6 @@ useEffect(() => {
           <div className="md:hidden" onClick={() => setOpen(!open)}>
             <MdMenu className="text-4xl" />
           </div>
-
         </div>
       </nav>
       <ResponsiveMenu open={open} menu={NavbarMenu} />

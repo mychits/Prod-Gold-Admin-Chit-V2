@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 
 import { AiOutlineGold } from "react-icons/ai";
-import  mychits  from "../../src/assets/images/Logo.svg"
 import { useNavigate } from "react-router-dom";
 import api from "../instance/TokenInstance";
-import {Input} from "antd";
 
 const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
