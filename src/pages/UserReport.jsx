@@ -44,7 +44,7 @@ const UserReport = () => {
   const [selectedAuctionGroupId, setSelectedAuctionGroupId] = useState("");
   const [filteredAuction, setFilteredAuction] = useState([]);
   const [groupInfo, setGroupInfo] = useState({});
-  const [receiptNo, setReceiptNo] = useState("");
+
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     return today.toISOString().split("T")[0];
@@ -78,14 +78,6 @@ const UserReport = () => {
     transaction_id: "",
   });
 
-  const handleFromDateChange = (e) => {
-    setFromDate(e.target.value);
-  };
-
-  const handleToDateChange = (e) => {
-    setToDate(e.target.value);
-  };
-
   const BasicLoanColumns = [
     { key: "id", header: "SL. NO" },
     { key: "pay_date", header: "Payment Date" },
@@ -96,23 +88,16 @@ const UserReport = () => {
   ];
 
   useEffect(() => {
-    const fetchBorrowerByID = async () => {
+    const fetchAllLoanPaymentsbyId = async () => {
       setBorrowersData([]);
+      setBasicLoading(true);
+
       try {
         const response = await api.get(
-          `/loan-payment/get-all-loan-payments/${borrowerId}`
+          `/loan-payment/get-all-loan-payments/${EnrollGroupId.ticket}`
         );
-        if (response.status >= 400)
-          throw new Error("Failed to fetch loan payments");
+
         if (response.data && response.data.length > 0) {
-          // setBorrowersData(response.data);
-
-          const Paid = response.data;
-          setGroupPaid(Paid[0].groupPaidAmount);
-
-          const toBePaid = response.data;
-          setGroupToBePaid(toBePaid[0].totalToBePaidAmount);
-
           let balance = 0;
           const formattedData = response.data.map((loanPayment, index) => {
             balance += Number(loanPayment.amount);
@@ -141,19 +126,14 @@ const UserReport = () => {
         }
       } catch (error) {
         console.error("Error fetching loan payment data:", error);
-        // setFilteredUsers([]);
         setBorrowersData([]);
+      } finally {
+        setBasicLoading(false);
       }
     };
-    fetchBorrowerByID();
-  }, [borrowerId]);
 
-  const handleChangeBorrowerId = (e) => {
-    const value = e.target.value;
-    if (value) {
-      setBorrowerId(value);
-    }
-  };
+    if (EnrollGroupId.groupId === "Loan") fetchAllLoanPaymentsbyId();
+  }, [EnrollGroupId.ticket]);
 
   useEffect(() => {
     const fetchGroupById = async () => {
@@ -167,8 +147,8 @@ const UserReport = () => {
         console.log("Failed to fetch group details by ID:", err.message);
       }
     };
-    fetchGroupById();
-  }, [EnrollGroupId]);
+    if (EnrollGroupId.groupId !== "Loan") fetchGroupById();
+  }, [EnrollGroupId?.ticket]);
 
   useEffect(() => {
     setScreenLoading(true);
@@ -188,14 +168,16 @@ const UserReport = () => {
     };
     fetchGroups();
   }, []);
+
   useEffect(() => {
     const fetchBorrower = async () => {
       try {
+        setLoanCustomers([]);
         const response = await api.get(
           `/loans/get-borrower-by-user-id/${selectedGroup}`
         );
         setLoanCustomers(response.data);
-        console.log(response.data, "response data is fetched");
+
         if (response.status >= 400) throw new Error("Failed to send message");
       } catch (err) {
         console.log("failed to fetch loan customers", err.message);
@@ -205,6 +187,7 @@ const UserReport = () => {
     setBorrowerId("No");
     fetchBorrower();
   }, [selectedGroup]);
+
   useEffect(() => {
     const fetchGroups = async () => {
       try {
@@ -216,27 +199,6 @@ const UserReport = () => {
     };
     fetchGroups();
   }, [selectedGroup]);
-
-  useEffect(() => {
-    const fetchReceipt = async () => {
-      try {
-        const response = await api.get("/payment/get-latest-receipt");
-        setReceiptNo(response.data);
-      } catch (error) {
-        console.error("Error fetching receipt data:", error);
-      }
-    };
-    fetchReceipt();
-  }, []);
-
-  useEffect(() => {
-    if (receiptNo) {
-      setFormData((prevData) => ({
-        ...prevData,
-        receipt_no: receiptNo.receipt_no,
-      }));
-    }
-  }, [receiptNo]);
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -252,15 +214,16 @@ const UserReport = () => {
 
   const handleGroupPayment = async (groupId) => {
     setSelectedAuctionGroupId(groupId);
-    //handleGroupChange(groupId);
     setSelectedGroup(groupId);
     handleGroupAuctionChange(groupId);
   };
 
   const handleEnrollGroup = (event) => {
     const value = event.target.value;
+
     if (value) {
       const [groupId, ticket] = value.split("|");
+      // for loan group id is "Loan" ticket is loan object Id
       setEnrollGroupId({ groupId, ticket });
     } else {
       setEnrollGroupId({ groupId: "", ticket: "" });
@@ -278,6 +241,7 @@ const UserReport = () => {
             pay_type: selectedPaymentMode,
           },
         });
+
         if (response.data && response.data.length > 0) {
           setFilteredAuction(response);
           const paymentData = response.data;
@@ -331,6 +295,7 @@ const UserReport = () => {
         const response = await api.post(
           `/enroll/get-user-tickets-report/${groupId}`
         );
+
         if (response.data && response.data.length > 0) {
           setFilteredAuction(response.data);
 
@@ -382,7 +347,7 @@ const UserReport = () => {
                       totalPaidAmount,
               };
             })
-            .filter((item) => item !== null); // Remove null entries from formattedData
+            .filter((item) => item !== null);
 
           setTableAuctions(formattedData);
           setCommission(0);
@@ -436,7 +401,6 @@ const UserReport = () => {
 
   const formatPayDate = (dateString) => {
     const date = new Date(dateString);
-    // const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
     return date.toISOString().split("T")[0];
   };
 
@@ -498,7 +462,7 @@ const UserReport = () => {
         setIsLoading(false);
       }
     };
-    fetchEnroll();
+    if (EnrollGroupId.groupId !== "Loan") fetchEnroll();
   }, [selectedGroup, EnrollGroupId.groupId, EnrollGroupId.ticket]);
 
   const Basiccolumns = [
@@ -588,7 +552,6 @@ const UserReport = () => {
         ? divident / groupInfo.group_members
         : 0;
       const payable = (groupInfo.group_install || 0) - divident_head;
-
       setFormData((prevData) => ({
         ...prevData,
         group_id: groupInfo._id,
@@ -626,7 +589,6 @@ const UserReport = () => {
     <>
       <div className="w-screen min-h-screen">
         <div className="flex mt-30">
-          {/* <Sidebar /> */}
           <Navbar
             onGlobalSearchChangeHandler={onGlobalSearchChangeHandler}
             visibility={true}
@@ -693,26 +655,6 @@ const UserReport = () => {
                       >
                         Customer Ledger
                       </button>
-                      <button
-                        className={`px-6 py-2 font-medium ${
-                          activeTab === "loanReport"
-                            ? "border-b-2 border-blue-500 text-blue-500"
-                            : "text-gray-500"
-                        }`}
-                        onClick={() => handleTabChange("loanReport")}
-                      >
-                        Loan Report
-                      </button>
-                      <button
-                        className={`px-6 py-2 font-medium ${
-                          activeTab === "dateWiseReport"
-                            ? "border-b-2 border-blue-500 text-blue-500"
-                            : "text-gray-500"
-                        }`}
-                        onClick={() => handleTabChange("dateWiseReport")}
-                      >
-                        Passbook
-                      </button>
                     </div>
 
                     {activeTab === "groupDetails" && (
@@ -730,7 +672,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="Enter Name"
                                   value={group.full_name}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -742,7 +684,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="Enter Email"
                                   value={group.email}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -754,7 +696,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="Enter Phone Number"
                                   value={group.phone_number}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -768,7 +710,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="Enter Adhaar Number"
                                   value={group.adhaar_no}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -780,7 +722,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="Enter Pan Number"
                                   value={group.pan_no}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -792,7 +734,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="Enter Pincode"
                                   value={group.pincode}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -806,7 +748,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="Address"
                                   value={group.address}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -849,7 +791,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="-"
                                   value={TotalToBepaid}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -861,7 +803,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="-"
                                   value={Totalprofit}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -873,7 +815,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="-"
                                   value={NetTotalprofit}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -885,7 +827,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="-"
                                   value={Totalpaid}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -897,7 +839,7 @@ const UserReport = () => {
                                   type="text"
                                   placeholder="-"
                                   value={NetTotalprofit - Totalpaid}
-                                  readonly
+                                  readOnly
                                   className="border border-gray-300 rounded px-4 py-2 shadow-sm outline-none w-full"
                                 />
                               </div>
@@ -916,9 +858,6 @@ const UserReport = () => {
                                 Groups and Tickets
                               </label>
                               <select
-                                onClick={() =>
-                                  console.log("set enroll group", EnrollGroupId)
-                                }
                                 value={
                                   EnrollGroupId.groupId
                                     ? `${EnrollGroupId.groupId}|${EnrollGroupId.ticket}`
@@ -942,11 +881,21 @@ const UserReport = () => {
                                   }
                                   return null;
                                 })}
+                                {loanCustomers.map((loan) => (
+                                  <option
+                                    key={loan._id}
+                                    value={`Loan|${loan._id}`}
+                                  >
+                                    {loan.loan_id}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                           </div>
 
-                          {TableEnrolls && (TableEnrolls.length > 0) &&(!basicLoading) ? (
+                          {TableEnrolls &&
+                          TableEnrolls.length > 0 ||borrowersData.length>0  &&
+                          !basicLoading ? (
                             <div className="mt-10">
                               <DataTable
                                 printHeaderKeys={[
@@ -971,8 +920,16 @@ const UserReport = () => {
                                     groupDetails.end_date
                                   ).toLocaleDateString("en-GB"),
                                 ]}
-                                data={TableEnrolls}
-                                columns={Basiccolumns}
+                                data={
+                                  EnrollGroupId.groupId === "Loan"
+                                    ? borrowersData
+                                    : TableEnrolls
+                                }
+                                columns={
+                                  EnrollGroupId.groupId === "Loan"
+                                    ? BasicLoanColumns
+                                    : Basiccolumns
+                                }
                               />
                             </div>
                           ) : (
@@ -980,50 +937,6 @@ const UserReport = () => {
                           )}
                         </div>
                       </>
-                    )}
-
-                    {activeTab === "loanReport" && (
-                      <>
-                        <div>
-                          <div className="flex gap-4">
-                            <div className="flex flex-col flex-1">
-                              <label className="mb-1 text-sm font-medium text-gray-700">
-                                Loan ID
-                              </label>
-                              <select
-                                onChange={handleChangeBorrowerId}
-                                className="border border-gray-300 rounded px-6 py-2 shadow-sm outline-none w-full max-w-md"
-                              >
-                                <option value="10">Select Loan ID</option>
-                                {loanCustomers.map((borrower) => {
-                                  return (
-                                    <option value={borrower._id}>
-                                      {borrower.loan_id}
-                                    </option>
-                                  );
-                                })}
-                              </select>
-                            </div>
-                          </div>
-
-                          {borrowersData && borrowersData.length > 0 ? (
-                            <div className="mt-10">
-                              <DataTable
-                                data={borrowersData}
-                                columns={BasicLoanColumns}
-                              />
-                            </div>
-                          ) : (
-                            <></>
-                          )}
-                        </div>
-                      </>
-                    )}
-
-                    {activeTab === "dateWiseReport" && (
-                      <div className="mt-7">
-                        <h1 className="text-2xl">Coming Soon</h1>
-                      </div>
                     )}
                   </div>
                 </>
