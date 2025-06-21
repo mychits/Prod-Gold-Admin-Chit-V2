@@ -60,6 +60,7 @@ const UserReport = () => {
   const [loanCustomers, setLoanCustomers] = useState([]);
   const [borrowersData, setBorrowersData] = useState([]);
   const [borrowerId, setBorrowerId] = useState("No");
+  const [filteredBorrowerData, setFilteredBorrowerData] = useState([]);
   const onGlobalSearchChangeHandler = (e) => {
     setSearchText(e.target.value);
   };
@@ -176,11 +177,22 @@ const UserReport = () => {
         const response = await api.get(
           `/loans/get-borrower-by-user-id/${selectedGroup}`
         );
+        if (response.data) {
+          const filteredBorrowerData = response.data.map((loan, index) => ({
+            sl_no: index + 1,
+            loan: loan.loan_id,
+            loan_amount: loan.loan_amount,
+            tenure: loan.tenure,
+            service_charge: loan.service_charges,
+          }));
+          setFilteredBorrowerData(filteredBorrowerData);
+        }
         setLoanCustomers(response.data);
 
         if (response.status >= 400) throw new Error("Failed to send message");
       } catch (err) {
         console.log("failed to fetch loan customers", err.message);
+        setFilteredBorrowerData([]);
       }
     };
     setBorrowersData([]);
@@ -277,7 +289,13 @@ const UserReport = () => {
     selectedPaymentMode,
     selectedCustomers,
   ]);
-
+  const loanColumns = [
+    { key: "sl_no", header: "SL. No" },
+    { key: "loan", header: "Loan ID" },
+    { key: "loan_amount", header: "Loan Amount" },
+    { key: "service_charge", header: "Service Charge" },
+    { key: "tenure", header: "Tenure" },
+  ];
   const columns = [
     { key: "id", header: "SL. NO" },
     { key: "group", header: "Group Name" },
@@ -777,6 +795,19 @@ const UserReport = () => {
                                         : "empty"
                                     }.csv`}
                                   />
+                                  {/* yes you can */}
+                                  {filteredBorrowerData.length > 0 && (
+                                    <div className="mt-10">
+                                      <h3 className="text-lg font-medium mb-4">
+                                        Loan Details
+                                      </h3>
+                                      <DataTable
+                                        data={filteredBorrowerData}
+                                        columns={loanColumns}
+                                        exportedFileName={`CustomerReport.csv`}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <CircularLoader isLoading={isLoading} />
@@ -886,16 +917,15 @@ const UserReport = () => {
                                     key={loan._id}
                                     value={`Loan|${loan._id}`}
                                   >
-                                    {loan.loan_id}
+                                    {`${loan.loan_id} | ₹${loan.loan_amount}`}
                                   </option>
                                 ))}
                               </select>
                             </div>
                           </div>
 
-                          {TableEnrolls &&
-                          TableEnrolls.length > 0 ||borrowersData.length>0  &&
-                          !basicLoading ? (
+                          {(TableEnrolls && TableEnrolls.length > 0) ||
+                          (borrowersData.length > 0 && !basicLoading) ? (
                             <div className="mt-10">
                               <DataTable
                                 printHeaderKeys={[
