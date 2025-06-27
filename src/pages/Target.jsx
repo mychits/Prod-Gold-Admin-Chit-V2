@@ -92,6 +92,7 @@ const Target = () => {
     incentive: 0,
   });
   const [isEditMode, setIsEditMode] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [editTargetId, setEditTargetId] = useState(null);
   const [fromDate, setFromDate] = useState(firstDay);
   const [toDate, setToDate] = useState(lastDay);
@@ -104,7 +105,6 @@ const Target = () => {
   });
   const [reload, setReload] = useState(0);
 
-  // FETCH DATA
   useEffect(() => {
     const fetchData = async () => {
       const [agentRes, designationRes] = await Promise.all([
@@ -203,6 +203,7 @@ const Target = () => {
           setTargets(originalTargets);
           setVirtualTargets(originalTargets);
         }
+        setLoading(false);
       } catch (err) {
         console.error("Error fetching targets:", err);
       }
@@ -259,20 +260,19 @@ const Target = () => {
                   difference: "-",
                   incentive_percent: "-",
                   incentive_amount: "-",
-                 action: (
-  <Dropdown
-    trigger={["click"]}
-    menu={{
-      items: [{ key: "set", label: "Set Target" }],
-      onClick: ({ key }) => {
-        if (key === "set") openSetModal(person, type);
-      },
-    }}
-  >
-    <IoMdMore className="cursor-pointer" />
-  </Dropdown>
-),
-
+                  action: (
+                    <Dropdown
+                      trigger={["click"]}
+                      menu={{
+                        items: [{ key: "set", label: "Set Target" }],
+                        onClick: ({ key }) => {
+                          if (key === "set") openSetModal(person, type);
+                        },
+                      }}
+                    >
+                      <IoMdMore className="cursor-pointer" />
+                    </Dropdown>
+                  ),
                 },
               ];
             }
@@ -287,171 +287,173 @@ const Target = () => {
     if (type && selectedId) buildRows();
   }, [type, selectedId, targets, fromDate, toDate]);
 
-const formatRow = async (person, targets, currentType) => {
-  let designation = "N/A";
-  let achieved = 0;
+  const formatRow = async (person, targets, currentType) => {
+    let designation = "N/A";
+    let achieved = 0;
 
-  const allTargets = targets.filter(
-    (t) =>
-      (t.agentId?._id || t.agentId) === person._id ||
-      (t.designationId?._id || t.designationId) === person._id
-  );
-
-  const monthMap = {};
-  allTargets.forEach((t) => {
-    const date = new Date(t.startDate);
-    const key = `${date.getFullYear()}-${date.getMonth()}`;
-    if (!monthMap[key]) monthMap[key] = t.totalTarget || 0;
-  });
-
-  const defaultTarget =
-    Object.values(monthMap).length > 0 ? Object.values(monthMap)[0] : 0;
-
-  let total = 0;
-  let loop = new Date(fromDate);
-  const end = new Date(toDate);
-
-  while (loop <= end) {
-    const key = `${loop.getFullYear()}-${loop.getMonth()}`;
-    const value = monthMap[key] ?? defaultTarget;
-    total += value;
-    loop.setMonth(loop.getMonth() + 1);
-  }
-
-  try {
-    const { data: commData } = await api.get(
-      `/enroll/get-detailed-commission/${person._id}`,
-      {
-        params: {
-          from_date: fromDate,
-          to_date: toDate,
-        },
-      }
+    const allTargets = targets.filter(
+      (t) =>
+        (t.agentId?._id || t.agentId) === person._id ||
+        (t.designationId?._id || t.designationId) === person._id
     );
-    achieved = commData?.summary?.actual_business || 0;
-    if (typeof achieved === "string") {
-      achieved = Number(achieved.replace(/[^0-9.-]+/g, ""));
+
+    const monthMap = {};
+    allTargets.forEach((t) => {
+      const date = new Date(t.startDate);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      if (!monthMap[key]) monthMap[key] = t.totalTarget || 0;
+    });
+
+    const defaultTarget =
+      Object.values(monthMap).length > 0 ? Object.values(monthMap)[0] : 0;
+
+    let total = 0;
+    let loop = new Date(fromDate);
+    const end = new Date(toDate);
+
+    while (loop <= end) {
+      const key = `${loop.getFullYear()}-${loop.getMonth()}`;
+      const value = monthMap[key] ?? defaultTarget;
+      total += value;
+      loop.setMonth(loop.getMonth() + 1);
     }
-  } catch (err) {
-    console.error("Error fetching actual business (achieved):", err);
-  }
 
-  designation = person.designationTitle || person.title || "N/A";
-
-  let isFallback = false;
-  if ((currentType === "agent" || currentType === "employee") && person._id) {
     try {
-      const { data: empData } = await api.get(
-        `/agent/get-additional-employee-info-by-id/${person._id}`
-      );
-      const fetchedTitle = empData?.employee?.designation_id?.title;
-      if (fetchedTitle) {
-        designation = fetchedTitle;
-        const allDirect = allTargets.filter(
-          (t) => (t.agentId?._id || t.agentId) === person._id
-        );
-        if (allDirect.length === 0) {
-          isFallback = true;
+      const { data: commData } = await api.get(
+        `/enroll/get-detailed-commission/${person._id}`,
+        {
+          params: {
+            from_date: fromDate,
+            to_date: toDate,
+          },
         }
+      );
+      achieved = commData?.summary?.actual_business || 0;
+      if (typeof achieved === "string") {
+        achieved = Number(achieved.replace(/[^0-9.-]+/g, ""));
       }
     } catch (err) {
-      console.error("Error fetching designation for row:", err);
+      console.error("Error fetching actual business (achieved):", err);
     }
-  }
 
-  if (isFallback) {
-    designation += " (default)";
-  }
+    designation = person.designationTitle || person.title || "N/A";
 
-  const difference = total - achieved;
-  const remaining = difference > 0 ? difference : 0;
-  let incentiveAmount = 0;
-  let incentivePercent = "0%";
-  const title = designation.toLowerCase();
+    let isFallback = false;
+    if ((currentType === "agent" || currentType === "employee") && person._id) {
+      try {
+        const { data: empData } = await api.get(
+          `/agent/get-additional-employee-info-by-id/${person._id}`
+        );
+        const fetchedTitle = empData?.employee?.designation_id?.title;
+        if (fetchedTitle) {
+          designation = fetchedTitle;
+          const allDirect = allTargets.filter(
+            (t) => (t.agentId?._id || t.agentId) === person._id
+          );
+          if (allDirect.length === 0) {
+            isFallback = true;
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching designation for row:", err);
+      }
+    }
 
-  if (title === "business agent" && achieved >= total) {
-    incentiveAmount = achieved * 0.005;
-    incentivePercent = "0.5%";
-  } else if (difference < 0) {
-    incentiveAmount = Math.abs(difference) * 0.01;
-    incentivePercent = "1%";
-  }
+    if (isFallback) {
+      designation += " (default)";
+    }
 
-const dropdownItems = [];
+    const difference = total - achieved;
+    const remaining = difference > 0 ? difference : 0;
+    let incentiveAmount = 0;
+    let incentivePercent = "0%";
+    const title = designation.toLowerCase();
 
-const hasRealTarget = targets.find(
-  (t) =>
-    ((t.agentId?._id || t.agentId) === person._id ||
-      (t.designationId?._id || t.designationId) === person._id) &&
-    t._id && !t.isVirtual
-);
+    if (title === "business agent" && achieved >= total) {
+      incentiveAmount = achieved * 0.005;
+      incentivePercent = "0.5%";
+    } else if (difference < 0) {
+      incentiveAmount = Math.abs(difference) * 0.01;
+      incentivePercent = "1%";
+    }
 
-if (hasRealTarget) {
-  dropdownItems.push({ key: "update", label: "Update Target" });
-  dropdownItems.push({ key: "delete", label: "Delete Target" });
-} else {
-  dropdownItems.push({ key: "set", label: "Set Target" });
-}
+    const dropdownItems = [];
 
+    const hasRealTarget = targets.find(
+      (t) =>
+        ((t.agentId?._id || t.agentId) === person._id ||
+          (t.designationId?._id || t.designationId) === person._id) &&
+        t._id &&
+        !t.isVirtual
+    );
 
-const actionDropdown = (
-  <Dropdown
-    trigger={["click"]}
-    menu={{
-      items: dropdownItems,
-      onClick: ({ key }) => {
-        if (key === "set") openSetModal(person, currentType);
-        if (key === "update" && hasRealTarget) openEditModal(hasRealTarget);
-        if (key === "delete" && hasRealTarget) handleDeleteTarget(hasRealTarget._id);
-      },
-    }}
-  >
-    <IoMdMore className="cursor-pointer" />
-  </Dropdown>
-);
+    if (hasRealTarget) {
+      dropdownItems.push({ key: "update", label: "View" });
+      dropdownItems.push({ key: "delete", label: "Delete Target" });
+    } else {
+      dropdownItems.push({ key: "set", label: "Set Target" });
+    }
 
+    const actionDropdown = (
+      <Dropdown
+        trigger={["click"]}
+        menu={{
+          items: dropdownItems,
+          onClick: ({ key }) => {
+            if (key === "set") openSetModal(person, currentType);
+            if (key === "update" && hasRealTarget) openEditModal(hasRealTarget);
+            if (key === "delete" && hasRealTarget)
+              handleDeleteTarget(hasRealTarget._id);
+          },
+        }}
+      >
+        <IoMdMore className="cursor-pointer" />
+      </Dropdown>
+    );
 
-  return {
-    name: person.name || person.title,
-    phone: person.phone_number || "-",
-    designation,
-    target: total,
-    achieved,
-    remaining,
-    difference,
-    incentive_percent: incentivePercent,
-    incentive_amount: `₹${incentiveAmount.toFixed(2)}`,
-    action: actionDropdown,
+    return {
+      name: person.name || person.title,
+      phone: person.phone_number || "-",
+      designation,
+      target: total,
+      achieved,
+      remaining,
+      difference,
+      incentive_percent: incentivePercent,
+      incentive_amount: `₹${incentiveAmount.toFixed(2)}`,
+      action: actionDropdown,
+    };
   };
-};
 
-
-
-const openSetModal = (person, selectedType) => {
-  const isDesig = selectedType === "designation";
-  setFormData({
-    agentId: isDesig ? "" : person._id,
-    designationId: isDesig ? person._id : "",
-    startDate: firstDay,
-    endDate: lastDay,
-    totalTarget: "",
-    incentive: 0,
-  });
-  setSelectedName(person.name || person.title || "");
-  setModalVisible(true);
-};
-
-
+  const openSetModal = (person, selectedType) => {
+    const isDesig = selectedType === "designation";
+    setFormData({
+      agentId: isDesig ? "" : person._id,
+      designationId: isDesig ? person._id : "",
+      startDate: firstDay,
+      endDate: lastDay,
+      totalTarget: "",
+      incentive: 0,
+    });
+    setSelectedName(person.name || person.title || "");
+    setModalVisible(true);
+  };
 
   const openEditModal = (target) => {
+    // Check if the target is set for an individual agent/employee
+    const isAgentBased = !!target.agentId;
+
     setFormData({
-      agentId: target.agentId?._id || "",
-      designationId: target.designationId?._id || "",
+      agentId: isAgentBased ? target.agentId?._id || target.agentId || "" : "",
+      designationId: !isAgentBased
+        ? target.designationId?._id || target.designationId || ""
+        : "",
       startDate: target.startDate?.split("T")[0] || "",
       endDate: target.endDate?.split("T")[0] || "",
       totalTarget: target.totalTarget,
       incentive: target.incentive || 0,
     });
+
     setEditTargetId(target._id);
     setIsEditMode(true);
     setModalVisible(true);
@@ -565,17 +567,31 @@ const openSetModal = (person, selectedType) => {
           <h1 className="text-2xl font-semibold mb-4">Target Report</h1>
           <div className="flex gap-2 flex-wrap mb-6">
             <select
-              className="lp-2 border rounded"
+              className={`lp-2 border rounded pl-5 py-2 ${
+                !type ? "text-gray-400" : "text-black"
+              }`}
               value={type}
               onChange={(e) => {
-                setType(e.target.value);
+                const selected = e.target.value;
+                setLoading(true);
+             
+                  setTableData([]); 
+                     setType(selected);
                 setSelectedId("all");
               }}
             >
-              <option value="">Select Type</option>
-              <option value="agent">Agent</option>
-              <option value="employee">Employee</option>
-              <option value="designation">Designation</option>
+              <option value="" hidden>
+                Select type
+              </option>
+              <option value="agent" className="text-black">
+                Agent
+              </option>
+              <option value="employee" className="text-black">
+                Employee
+              </option>
+              <option value="designation" className="text-black">
+                Designation
+              </option>
             </select>
             {type && (
               <select
@@ -610,11 +626,19 @@ const openSetModal = (person, selectedType) => {
             />
           </div>
 
-          <DataTable
-            data={tableData}
-            columns={getColumns()}
-            exportedFileName="Target-Report.csv"
-          />
+          <div className="relative min-h-[200px]">
+            {loading ? (
+              <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
+              </div>
+            ) : (
+              <DataTable
+                data={tableData}
+                columns={getColumns()}
+                exportedFileName="Target-Report.csv"
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -628,7 +652,7 @@ const openSetModal = (person, selectedType) => {
       >
         <div className="p-6">
           <h2 className="text-xl font-bold mb-4">
-            {isEditMode ? "Update Target" : "Set Target"}
+            {isEditMode ? "Targets" : "Set Target"}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             {selectedName && (
