@@ -58,6 +58,7 @@ import PayOutSalary from "../pages/PayOutSalary";
 import PayOutReport from "../pages/PayoutReport";
 import ErrorPage from "./error/ErrorPage";
 import Guarantor from "../pages/Guarantor";
+import DreamAsset from "../pages/DreamAsset";
 const mainRoutes = createBrowserRouter([
   {
     path: "/",
@@ -80,6 +81,7 @@ const mainRoutes = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
   {
     path: "/group",
     element: (
@@ -118,8 +120,8 @@ const mainRoutes = createBrowserRouter([
     element: <EnrollmentRequestForm />,
   },
   {
-path:"/guarantor",
-element:<Guarantor/>
+    path: "/guarantor",
+    element: <Guarantor />,
   },
   {
     path: "/filter-groups",
@@ -249,11 +251,11 @@ element:<Guarantor/>
       </ProtectedRoute>
     ),
   },
-   {
+  {
     path: "/payment-out/others",
     element: (
       <ProtectedRoute>
-       <ErrorPage/>
+        <ErrorPage />
       </ProtectedRoute>
     ),
   },
@@ -299,6 +301,10 @@ element:<Guarantor/>
           {
             path: "groups/mobile-access",
             element: <GroupSettings />,
+          },
+          {
+            path: "groups/asset",
+            element: <DreamAsset />,
           },
         ],
       },

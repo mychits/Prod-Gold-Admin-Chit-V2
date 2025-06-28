@@ -21,7 +21,7 @@ import { GoGraph } from "react-icons/go";
 import { Link, useLocation } from "react-router-dom";
 import { AiOutlinePlus, AiOutlineMinus } from "react-icons/ai";
 import { MdAppSettingsAlt } from "react-icons/md";
-
+import { ImHappy } from "react-icons/im";
 
 const MenuSidebar = [
   { title: "Dashboard", icon: <RiDashboardFill />, link: "/dashboard" },
@@ -31,7 +31,6 @@ const MenuSidebar = [
     link: "/analytics",
   },
 
-
   {
     title: "App Settings ",
     spacing: true,
@@ -40,13 +39,18 @@ const MenuSidebar = [
     submenuItems: [
       {
         title: "Groups",
-        icon: <MdOutlineGroups/>,
+        icon: <MdOutlineGroups />,
         submenu: true,
         submenuItems: [
           {
             title: "Mobile Access",
             icon: <MdAppSettingsAlt size={20} />,
-            link: "/lead-setting/app-settings/groups/mobile-access", 
+            link: "/lead-setting/app-settings/groups/mobile-access",
+          },
+          {
+            title: "Dream Asset",
+            icon: <ImHappy size={20} />,
+            link: "/lead-setting/app-settings/groups/asset",
           },
         ],
       },
@@ -69,11 +73,11 @@ const MenuSidebar = [
     link: "/admin-access-rights",
   },
 
-   {
-      title: "Agent Target",
-      icon: <GoGraph />,
-      link: "/target",
-    },
+  {
+    title: "Agent Target",
+    icon: <GoGraph />,
+    link: "/target",
+  },
   {
     title: "Profile",
     spacing: true,
@@ -124,12 +128,13 @@ const SettingSidebar = () => {
                   <span className="text-xl">
                     {item.title === "Groups" ? (
                       isExpanded(key) ? (
-                        <AiOutlineMinus size={15}/>
+                        <AiOutlineMinus size={15} />
                       ) : (
-                        <AiOutlinePlus size={15}/>
+                        <AiOutlinePlus size={15} />
                       )
                     ) : (
-                      <BsChevronDown size={15}
+                      <BsChevronDown
+                        size={15}
                         className={`transition-transform duration-200 ${
                           isExpanded(key) ? "rotate-180" : ""
                         }`}
