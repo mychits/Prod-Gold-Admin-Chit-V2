@@ -248,6 +248,7 @@ const Receipt = () => {
   };
 
   useEffect(() => {
+    const abortController = new AbortController();
     const fetchPayments = async () => {
       try {
         setIsLoading(true);
@@ -259,7 +260,9 @@ const Receipt = () => {
             userId: selectedCustomers,
             pay_type: selectedPaymentMode,
             account_type: selectedAccountType,
+            
           },
+          signal:abortController.signal
         });
         console.info(response.data, "testing account type")
         if (response.data && response.data.length > 0) {
@@ -337,6 +340,9 @@ const Receipt = () => {
     };
 
     fetchPayments();
+     return ()=>{
+        abortController.abort();
+      }
   }, [
     selectedAuctionGroupId,
     selectedDate,
