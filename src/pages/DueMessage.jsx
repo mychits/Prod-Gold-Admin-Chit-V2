@@ -58,6 +58,7 @@ const DueMessage = () => {
                     userName: user.userName,
                     groupId: user.groupId,
                     userId: user.userId,
+                    amountPaid:user.amountPaid
                   },
                 },
               }));
@@ -206,6 +207,7 @@ const DueMessage = () => {
     { key: "payment_type", header: "Payment Type" },
     { key: "paymentsTicket", header: "Ticket" },
     { key: "totalToBePaid", header: "Amount to be Paid" },
+    { key: "amountPaid", header: "Paid Amount" },
     { key: "balance", header: "Balance" },
     { key: "checkBoxs", header: "Select User" },
   ];
