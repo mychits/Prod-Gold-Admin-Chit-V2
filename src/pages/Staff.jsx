@@ -333,7 +333,7 @@ const Staff = () => {
   ];
 
   const filteredUsers = users.filter((user) =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDeleteModalOpen = async (userId) => {
