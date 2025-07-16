@@ -37,7 +37,7 @@ const DueMessage = () => {
 
     return filtered.map((user, index) => {
       const isSelected = !!activeUserData[user._id]?.info?.status;
-      
+
       return {
         ...user,
         sl_no: index + 1,
@@ -58,20 +58,21 @@ const DueMessage = () => {
                     userName: user.userName,
                     groupId: user.groupId,
                     userId: user.userId,
-                    amountPaid:user.amountPaid
+                    amountPaid: user.amountPaid,
+                    amountToBePaid: user.amountToBePaid,
                   },
                 },
               }));
             }}
           />
         ),
-        isSelected
+        isSelected,
       };
     });
   }, [usersData, groupFilter, fromDate, toDate, searchText, activeUserData]);
 
   const visibleSelectedCount = useMemo(() => {
-    return filteredUsers.filter(user => user.isSelected).length;
+    return filteredUsers.filter((user) => user.isSelected).length;
   }, [filteredUsers]);
 
   const sendWhatsapp = async () => {
@@ -86,16 +87,16 @@ const DueMessage = () => {
       });
 
       const visibleActiveUsers = {};
-      filteredUsers.forEach(user => {
+      filteredUsers.forEach((user) => {
         if (user.isSelected && activeUserData[user._id]) {
           visibleActiveUsers[user._id] = activeUserData[user._id];
         }
       });
 
       await api.post("/whatsapp/due-message", visibleActiveUsers);
-      
+
       const newActiveUserData = { ...activeUserData };
-      filteredUsers.forEach(user => {
+      filteredUsers.forEach((user) => {
         if (user.isSelected) {
           delete newActiveUserData[user._id];
         }
@@ -131,7 +132,9 @@ const DueMessage = () => {
         if (usrData?.data) {
           usrData.data.forEach((data) => {
             if (data?.enrollment?.group) {
-              const groupInstall = parseInt(data.enrollment.group.group_install);
+              const groupInstall = parseInt(
+                data.enrollment.group.group_install
+              );
               const groupId = data.enrollment.group._id;
               const groupType = data.enrollment.group.group_type;
               const totalPaidAmount = data.payments.totalPaidAmount;
@@ -172,12 +175,13 @@ const DueMessage = () => {
                 customerId: usrData.customer_id,
                 amountPaid: totalPaidAmount,
                 paymentsTicket,
+                amountToBePaid,
                 groupName,
                 payment_type: data?.enrollment?.payment_type,
-                totalToBePaid,
+                totalToBePaid: totalToBePaid,
                 balance,
                 groupId: groupId,
-                userId: usrData?._id
+                userId: usrData?._id,
               };
               usersList.push(tempUsr);
             }

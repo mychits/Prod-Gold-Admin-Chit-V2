@@ -10,7 +10,7 @@ import DataTable from "../components/layouts/Datatable";
 import CustomAlertDialog from "../components/alerts/CustomAlertDialog";
 import Navbar from "../components/layouts/Navbar";
 import { IoMdMore } from "react-icons/io";
-import { Input, Select, Dropdown } from "antd";
+import { Input, Select, Dropdown, Tooltip } from "antd";
 import { fieldSize } from "../data/fieldSize";
 import CircularLoader from "../components/loaders/CircularLoader";
 import { FaWhatsappSquare } from "react-icons/fa";
@@ -33,6 +33,8 @@ const Lead = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const whatsappEnable = true;
+  const [leadShowModal, setLeadShowModal] = useState(false);
+  const [selectedLeadData, setSelectedLeadData] = useState(null);
   const onGlobalSearchChangeHandler = (e) => {
     const { value } = e.target;
     setSearchText(value);
@@ -126,11 +128,27 @@ const Lead = () => {
                     {
                       key: "2",
                       label: (
+                       
+                        <Tooltip title="Lead to Customer">
+                          <div
+                            className="text-purple-900 cursor-pointer font-bold"
+                            onClick={() =>
+                              handleOpenConvertCustomerModal(group._id)
+                            }
+                          >
+                            L ↔ C
+                          </div>
+                        </Tooltip>
+                      ),
+                    },
+                    {
+                      key: "3",
+                      label: (
                         <div
-                          className="text-red-600"
-                          onClick={() => handleDeleteModalOpen(group._id)}
+                          className="text-rose-500"
+                          onClick={() => handleSoftRemove(group._id)}
                         >
-                          Delete
+                          Remove
                         </div>
                       ),
                     },
@@ -374,6 +392,57 @@ const Lead = () => {
     }
   };
 
+  const regex = {
+  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,      // Validates email format
+  pincode: /^\d{6}$/,                       // Validates 6 digits for pincode
+  adhaar: /^\d{12}$/                        // Validates 12 digits for Aadhar number
+};
+
+  const validateConvertToCustomer = (data) => {
+    const newErrors = {};
+
+    if (!data.full_name?.trim()) {
+      newErrors.full_name = "Full name is required";
+    }
+
+    if (!data.phone_number || !/^[6-9]\d{9}$/.test(data.phone_number)) {
+      newErrors.phone_number = "Valid phone number is required";
+    }
+
+
+
+    if (!data.password) {
+      newErrors.password = "Password is required";
+    }
+
+    if (!data.pincode || !regex.pincode.test(data.pincode)) {
+      newErrors.pincode = "Invalid pincode (6 digits required)";
+    }
+
+    if (!data.adhaar_no || !regex.adhaar.test(data.adhaar_no)) {
+      newErrors.adhaar_no = "Invalid Aadhar number (12 digits required)";
+    }
+
+   if (data.pan_no && data.pan_no.trim().length !== 10) {
+  newErrors.pan_no = "Invalid PAN format (e.g., ABCDE1234F)";
+}
+
+    if (!data.address || data.address.trim().length < 3) {
+      newErrors.address = "Address should be at least 3 characters";
+    }
+
+    if (!data.no_of_tickets) {
+      newErrors.no_of_tickets = "Number of Tickets is required";
+    }
+
+    if (!data.payment_type) {
+      newErrors.payment_type = "Payment type is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     const isValid = validateForm();
@@ -410,6 +479,89 @@ const Lead = () => {
     { key: "note", header: "Note" },
     { key: "action", header: "Action" },
   ];
+
+   const handleConvertCustomerSubmit = async (e) => {
+    e.preventDefault();
+
+    const valid = validateConvertToCustomer(formData);
+    console.log(valid);
+    if (!valid) return;
+    try {
+      if (valid) {
+        const response = await api.post(
+          "/lead/convert-lead-to-customer",
+          formData
+        );
+
+        setAlertConfig({
+          type: "success",
+          message: response.data.message || "Lead converted successfully",
+          visibility: true,
+        });
+        setLeadShowModal(false);
+        setReloadTrigger((prev) => prev + 1);
+        setErrors({});
+      }
+    } catch (error) {
+      const errMsg = error?.response?.data?.message;
+      // Handle field-specific errors
+      if (errMsg?.toLowerCase().includes("phone number")) {
+        setErrors((prev) => ({
+          ...prev,
+          phone_number: "Phone number already exists.",
+        }));
+      }
+      if (errMsg?.toLowerCase().includes("group is already full")) {
+        setErrors((prev) => ({ ...prev, group_id: errMsg }));
+      }
+      if (errMsg?.toLowerCase().includes("agent already exists")) {
+        setErrors((prev) => ({ ...prev, agent: errMsg }));
+      }
+      setAlertConfig({
+        type: "error",
+        message: errMsg || "Something went wrong",
+        visibility: true,
+      });
+    }
+  };
+
+  const handleOpenConvertCustomerModal = async (leadId) => {
+    try {
+      const { data } = await api.get(
+        `/lead/get-lead-to-customer-by-id/${leadId}`
+      );
+
+      setFormData({
+        full_name: data?.lead_name || "",
+        phone_number: data?.lead_phone || "",
+        lead_profession: data?.lead_profession || "", // ✅ Ensure added
+        group_id: data?.group_id?._id || "", // ✅ Ensure added
+        lead_type: data?.lead_type || "", // ✅ Ensure added
+        lead_agent: data?.lead_agent?._id || "",
+        email: "",
+        password: "",
+        lead_customer: data?.lead_customer?._id || "",
+        pincode: data?.pincode || "",
+        address: data?.lead_address || "",
+        adhaar_no: "",
+        pan_no: "",
+        lead_needs: data?.lead_needs || "",
+        note: data?.note || "",
+        referred_type: data?.lead_type || "",
+        payment_type: data?.payment_type || "",
+        no_of_tickets: data?.no_of_tickets || "",
+      });
+
+      setLeadShowModal(true);
+    } catch (error) {
+      console.error("Error opening convert modal:", error);
+      setAlertConfig({
+        type: "error",
+        message: "Failed to load lead details.",
+        visibility: true,
+      });
+    }
+  };
 
   return (
     <>
@@ -1363,6 +1515,515 @@ const Lead = () => {
               focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                 >
                   Update
+                </button>
+              </div>
+            </form>
+          </div>
+        </Modal>
+        <Modal
+          isVisible={leadShowModal}
+          onClose={() => setLeadShowModal(false)}
+          leadData={selectedLeadData}
+          setReloadTrigger={setReloadTrigger}
+        >
+          <div className="py-6 px-5 lg:px-8 text-left">
+            <h3 className="mb-4 text-xl font-bold text-gray-900">
+              Convert Lead to Customer
+            </h3>
+            <form
+              className="space-y-6"
+              onSubmit={handleConvertCustomerSubmit}
+              noValidate
+            >
+              <div className="flex flex-row justify-between space-x-4">
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="name"
+                  >
+                    Lead Name <span className="text-red-500 ">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="full_name"
+                    value={formData.full_name}
+                    onChange={handleChange}
+                    id="name"
+                    placeholder="Enter the Group Name"
+                    readOnly
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.full_name && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.full_name}
+                    </p>
+                  )}
+                </div>
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="date"
+                  >
+                    Lead Email <span className="text-red-500 ">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    id="text"
+                    placeholder="Enter Email"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+               
+                </div>
+              </div>
+              <div className="flex flex-row justify-between space-x-4">
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="date"
+                  >
+                    Lead Phone Number <span className="text-red-500 ">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="phone_number"
+                    value={formData.phone_number}
+                    onChange={handleChange}
+                    id="text"
+                    placeholder="Enter Lead Phone Number"
+                    readOnly
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.phone_number && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.phone_number}
+                    </p>
+                  )}
+                </div>
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="date"
+                  >
+                    Lead Work/Profession{" "}
+                    <span className="text-red-500 ">*</span>
+                  </label>
+
+                  <Select
+                    className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                    placeholder="Select Lead Work/Profession "
+                    popupMatchSelectWidth={false}
+                    showSearch
+                    name="lead_profession"
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    value={formData?.lead_profession || undefined}
+                    onChange={(value) =>
+                      handleAntDSelect("lead_profession", value)
+                    }
+                  >
+                    {["Employed", "Self Employed"].map((lProf) => (
+                      <Select.Option key={lProf} value={lProf.toLowerCase()}>
+                        {lProf}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                  {/* {errors.lead_profession && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.lead_profession}
+                    </p>
+                  )} */}
+                </div>
+              </div>
+              <div className="w-full">
+                <label
+                  className="block mb-2 text-sm font-medium text-gray-900"
+                  htmlFor="category"
+                >
+                  Group
+                </label>
+
+                <Select
+                  className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                  placeholder="Select Group "
+                  popupMatchSelectWidth={false}
+                  showSearch
+                  name="group_id"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                  value={formData?.group_id || undefined}
+                  onChange={(value) => handleAntDSelect("group_id", value)}
+                >
+                  {groups.map((group) => (
+                    <Select.Option key={group._id} value={group._id}>
+                      {group.group_name}
+                    </Select.Option>
+                  ))}
+                </Select>
+                {errors.group_id && (
+                  <p className="mt-1 text-sm text-red-600">{errors.group_id}</p>
+                )}
+              </div>
+              <div className="w-full">
+                <label
+                  className="block mb-2 text-sm font-medium text-gray-900"
+                  htmlFor="category"
+                >
+                  Lead Source Type <span className="text-red-500 ">*</span>
+                </label>
+
+                <Select
+                  className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                  placeholder="Select or Search Lead Source Type "
+                  popupMatchSelectWidth={false}
+                  showSearch
+                  name="lead_type"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                  value={formData?.lead_type || undefined}
+                  onChange={(value) => handleAntDSelect("lead_type", value)}
+                >
+                  {[
+                    "Social Media",
+                    "Customer",
+                    "Agent",
+                    "Employee",
+                    "Walkin",
+                  ].map((type) => (
+                    <Select.Option key={type} value={type.toLowerCase()}>
+                      {type}
+                    </Select.Option>
+                  ))}
+                </Select>
+                {errors.lead_type && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.lead_type}
+                  </p>
+                )}
+              </div>
+              {formData.lead_type === "customer" && (
+                <>
+                  <div className="w-full">
+                    <label
+                      className="block mb-2 text-sm font-medium text-gray-900"
+                      htmlFor="category"
+                    >
+                      Customers
+                    </label>
+
+                    <Select
+                      className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                      placeholder="Select Or Search Customers"
+                      popupMatchSelectWidth={false}
+                      showSearch
+                      name="lead_customer"
+                      filterOption={(input, option) =>
+                        option.children
+                          .toString()
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                      value={formData?.lead_customer || undefined}
+                      onChange={(value) =>
+                        handleAntDSelect("lead_customer", value)
+                      }
+                    >
+                      {users.map((user) => (
+                        <Select.Option key={user._id} value={user._id}>
+                          {user.full_name}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                    {/* {errors.lead_customer && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {errors.lead_customer}
+                      </p>
+                    )} */}
+                  </div>
+                </>
+              )}{" "}
+              {formData.lead_type === "agent" && (
+                <>
+                  <div className="w-full">
+                    <label
+                      className="block mb-2 text-sm font-medium text-gray-900"
+                      htmlFor="category"
+                    >
+                      Agents
+                    </label>
+
+                    <Select
+                      className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                      placeholder="Select or Search Agent "
+                      popupMatchSelectWidth={false}
+                      showSearch
+                      name="lead_agent"
+                      filterOption={(input, option) =>
+                        option.children
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                      value={formData?.lead_agent || undefined}
+                      onChange={(value) =>
+                        handleAntDSelect("lead_agent", value)
+                      }
+                    >
+                      {agents.map((agent) => (
+                        <Select.Option key={agent._id} value={agent._id}>
+                          {agent.name}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                    {errors.lead_agent && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {errors.lead_agent}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+              <div className="flex flex-row justify-between space-x-4">
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="date"
+                  >
+                    Password <span className="text-red-500 ">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    id="text"
+                    placeholder="Enter Password"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.password && (
+                    <p className="mt-2 text-sm text-red-600">
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="date"
+                  >
+                    Pincode <span className="text-red-500 ">*</span>
+                  </label>
+                  <Input
+                    type="number"
+                    name="pincode"
+                    value={formData.pincode}
+                    onChange={handleChange}
+                    id="text"
+                    placeholder="Enter Pincode"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.pincode && (
+                    <p className="mt-2 text-sm text-red-600">
+                      {errors.pincode}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label
+                  className="block mb-2 text-sm font-medium text-gray-900"
+                  htmlFor="email"
+                >
+                  Address <span className="text-red-500 ">*</span>
+                </label>
+                <Input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  id="name"
+                  placeholder="Enter the Address"
+                  required
+                  className={`bg-gray-50 border ${fieldSize.height} border-gray-300 text-gray-900 text-sm rounded-lg w-full`}
+                />
+                {/* {errors.address && (
+                  <p className="mt-2 text-sm text-red-600">{errors.address}</p>
+                )} */}
+              </div>
+              <div className="w-full">
+                <label
+                  className="block mb-2 text-sm font-medium text-gray-900"
+                  htmlFor="payment_type"
+                >
+                  Select Payment Type <span className="text-red-500 ">*</span>
+                </label>
+                <Select
+                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  placeholder="Select Payment Type"
+                  popupMatchSelectWidth={false}
+                  showSearch
+                  name="payment_type"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                  value={formData?.payment_type || undefined}
+                  onChange={(value) => handleAntDSelect("payment_type", value)}
+                >
+                  {["Daily", "Weekly", "Monthly"].map((pType) => (
+                    <Select.Option key={pType} value={pType}>
+                      {pType}
+                    </Select.Option>
+                  ))}
+                </Select>
+                {errors.payment_type && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {errors.payment_type}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-row justify-between space-x-4">
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="date"
+                  >
+                    Adhaar Number <span className="text-red-500 ">*</span>
+                  </label>
+                  <Input
+                    type="number"
+                    name="adhaar_no"
+                    value={formData.adhaar_no}
+                    onChange={handleChange}
+                    id="text"
+                    placeholder="Enter Adhaar Number"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.adhaar_no && (
+                    <p className="mt-2 text-sm text-red-600">
+                      {errors.adhaar_no}
+                    </p>
+                  )}
+                </div>
+
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="category"
+                  >
+                    Pan Number <span className="text-red-500 ">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    name="pan_no"
+                    value={formData?.pan_no}
+                    onChange={handleChange}
+                    id="text"
+                    placeholder="Enter Pan Number"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.pan_no && (
+                    <p className="mt-2 text-sm text-red-600">{errors.pan_no}</p>
+                  )}
+                </div>
+              </div>
+              <div className="w-full">
+                <label
+                  className="block mb-2 text-sm font-medium text-gray-900"
+                  htmlFor="date"
+                >
+                  Note
+                </label>
+                <input
+                  type="text"
+                  name="note"
+                  value={formData.note}
+                  onChange={handleChange}
+                  id="text"
+                  placeholder="Specify note if any!"
+                  required
+                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                />
+              </div>
+              <div className="flex flex-row justify-between space-x-4">
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="no_of_tickets"
+                  >
+                    Number of Tickets <span className="text-red-500 ">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="no_of_tickets"
+                    value={formData.no_of_tickets}
+                    onChange={handleChange}
+                    id="text"
+                    placeholder="Enter Number of Tickets"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.no_of_tickets && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.no_of_tickets}
+                    </p>
+                  )}
+                </div>
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="category"
+                  >
+                    Lead Needs and Goals{" "}
+                    <span className="text-red-500 ">*</span>
+                  </label>
+
+                  <Select
+                    className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                    placeholder="Select or Search Lead Needs and Goals "
+                    popupMatchSelectWidth={false}
+                    showSearch
+                    name="lead_needs"
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    value={formData?.lead_needs || undefined}
+                    onChange={(value) => handleAntDSelect("lead_needs", value)}
+                  >
+                    {["Savings", "Borrowings"].map((type) => (
+                      <Select.Option key={type} value={type.toLowerCase()}>
+                        {type}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                  {errors.lead_needs && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.lead_needs}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="w-full flex justify-end">
+                <button
+                  type="submit"
+                  className="w-1/4 text-white bg-blue-700 hover:bg-blue-800 border-2 border-black
+              focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                >
+                  Convert To Customer
                 </button>
               </div>
             </form>

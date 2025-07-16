@@ -7,7 +7,7 @@ import Modal from "../components/modals/Modal";
 import DataTable from "../components/layouts/Datatable";
 import CustomAlert from "../components/alerts/CustomAlert";
 import { FaWhatsappSquare } from "react-icons/fa";
-import { Select, Dropdown } from "antd";
+import { Select, Dropdown, notification } from "antd";
 import { IoMdMore } from "react-icons/io";
 import Navbar from "../components/layouts/Navbar";
 import filterOption from "../helpers/filterOption";
@@ -33,13 +33,13 @@ const Enroll = () => {
   const [agents, setAgents] = useState([]);
   const date = new Date().toISOString().split("T")[0];
   const whatsappEnable = true;
-
+  const [enrollmentStep, setEnrollmentStep] = useState("verify");
   const [alertConfig, setAlertConfig] = useState({
     visibility: false,
     message: "Something went wrong!",
     type: "info",
   });
-
+const [isExistingEnrollment, setIsExistingEnrollment] = useState(false);
   const [formData, setFormData] = useState({
     group_id: "",
     user_id: "",
@@ -51,7 +51,7 @@ const Enroll = () => {
     referred_lead: "",
     chit_asking_month: "",
   });
-
+const [isVerified, setIsVerified] = useState(false);
   const [updateFormData, setUpdateFormData] = useState({
     group_id: "",
     user_id: "",
@@ -535,6 +535,174 @@ const Enroll = () => {
     }
   }, [selectedGroup]);
 
+
+      const handleVerify = async () => {
+    const {
+      user_id,
+      group_id,
+      agent,
+      referred_customer,
+      referred_lead,
+      referred_type,
+    } = formData;
+
+    if (!user_id || !group_id) {
+      notification.warning({
+        message: "Please select both Group and Customer before verifying.",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.get(`/enroll/get-enroll-check`, {
+        params: { user_id, group_id },
+      });
+
+      const selectedUser = users.find((u) => u._id === user_id);
+      const selectedGroup = groups.find((g) => g._id === group_id);
+      const selectedAgent = agents.find((a) => a._id === agent);
+      const selectedReferredCustomer = users.find(
+        (u) => u._id === referred_customer
+      );
+      const selectedReferredLead = leads?.find?.(
+        (l) => l._id === referred_lead
+      );
+
+      if (response?.data) {
+        const agentName =
+          typeof response.data.agent === "object"
+            ? response.data.agent?.name
+            : null;
+        const referredCustomerName =
+          typeof response.data.referred_customer === "object"
+            ? response.data.referred_customer?.full_name
+            : null;
+        const referredLeadName =
+          typeof response.data.referred_lead === "object"
+            ? response.data.referred_lead?.lead_name
+            : null;
+
+        const referredInfoParts = [];
+
+        if (agentName)
+          referredInfoParts.push(` Already referred by Agent Name: ${agentName}`);
+        if (referredCustomerName)
+          referredInfoParts.push(
+            `👤 Already referred by Customer Name: ${referredCustomerName}`
+          );
+        if (referredLeadName)
+          referredInfoParts.push(
+            `🧲 Already referred by Lead Name: ${referredLeadName}`
+          );
+        if (referredInfoParts.length === 0)
+          referredInfoParts.push("Enrollment exists with no referral info.");
+
+        setFormData((prev) => ({
+          ...prev,
+          no_of_tickets: response?.data?.no_of_tickets ?? prev.no_of_tickets,
+          payment_type: response?.data?.payment_type ?? prev.payment_type,
+          referred_customer:
+            response?.data?.referred_customer ?? prev.referred_customer,
+          referred_lead: response?.data?.referred_lead ?? prev.referred_lead,
+          referred_type:
+            prev.referred_type ||
+            response?.data?.referred_type ||
+            (response.data?.agent
+              ? "Agent"
+              : response.data?.referred_customer
+              ? "Customer"
+              : response.data?.referred_lead
+              ? "Leads"
+              : ""),
+          chit_asking_month:
+            response?.data?.chit_asking_month ?? prev.chit_asking_month,
+        }));
+
+        // Show selectedBy based on referred_type
+        let selectedBy = "Unknown";
+        if (referred_type === "Agent")
+          selectedBy = selectedAgent?.name || "Unknown Agent";
+        else if (referred_type === "Customer")
+          selectedBy =
+            selectedReferredCustomer?.full_name || "Unknown Customer";
+        else if (referred_type === "Leads")
+          selectedBy = selectedReferredLead?.lead_name || "Unknown Lead";
+
+        setIsExistingEnrollment(true);
+        setEnrollmentStep("continue");
+
+        // notification.warning({
+        //   message: `User: "${selectedUser?.full_name}" "\n" Group: "${selectedGroup?.group_name}"`,
+        //   description: `Referred Type (${referred_type}) "\n" Name: ${selectedBy}\n${referredInfoParts.join(
+        //     "\n"
+        //   )}`,
+        //   duration: 20,
+        // });
+        notification.warning({
+  message: (
+    <span style={{ fontWeight: 'bold', fontSize: '1.25rem', marginBottom: '10px' }}>
+      Customer Name: "{selectedUser?.full_name}"
+      <br />
+      <hr style={{ margin: '10px 0', borderTop: '1px solid #ccc' }} />
+      Group Name: "{selectedGroup?.group_name}"
+      <br />
+      <hr style={{ margin: '10px 0', borderTop: '1px solid #ccc' }} />
+    </span>
+  ),
+  description: (
+    <div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
+      {/* Referred Type ({referred_type})
+      <br />
+      <hr style={{ margin: '10px 0', borderTop: '1px solid #ccc' }} />
+      Name: {selectedBy}
+      <br />
+      <hr style={{ margin: '10px 0', borderTop: '1px solid #ccc' }} /> */}
+      {referredInfoParts.map((part, index) => (
+        <span key={index}>
+          {part}
+          <br />
+          <hr style={{ margin: '10px 0', borderTop: '1px solid #ccc' }} />
+        </span>
+      ))}
+    </div>
+  ),
+  duration: 30,
+});
+        setIsExistingEnrollment(true); // ✅ Still set this
+        setIsVerified(true); // ✅ Allow submission
+        setEnrollmentStep("continue");
+      } else {
+        setIsExistingEnrollment(false);
+        setIsVerified(true);
+        setEnrollmentStep("continue");
+
+        notification.success({
+          message: `✅ Eligible for Enrollment`,
+          description: `User "${selectedUser?.full_name}" can be enrolled in "${selectedGroup?.group_name}".`,
+          duration: 6,
+        });
+      }
+    } catch (err) {
+      console.error("Verification error:", err);
+      notification.error({
+        message: "Error checking enrollment",
+        description: err.response?.data?.message || "Something went wrong",
+      });
+    }
+  };
+
+  const handleMultiStep = async (e) => {
+    e.preventDefault();
+
+    if (enrollmentStep === "verify") {
+      await handleVerify(); // this sets isVerified inside
+    } else if (enrollmentStep === "continue") {
+      setEnrollmentStep("submit");
+    } else if (enrollmentStep === "submit") {
+      handleSubmit(e);
+    }
+  };
+
   return (
     <>
       <div>
@@ -915,22 +1083,31 @@ const Enroll = () => {
                 </div>
               </div>
               <div className="w-full flex justify-end">
-                <button
-                  type="submit"
-                  disabled={loading || availableTicketsAdd.length === 0}
+               <button
+                  type="button"
+                  disabled={
+                    loading ||
+                    (enrollmentStep === "submit" &&
+                      (!isVerified || availableTicketsAdd.length === 0))
+                  }
+                  onClick={handleMultiStep}
                   className={`w-1/4 text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center ${
                     loading
                       ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 border-2 border-black"
+                      : enrollmentStep === "verify"
+                      ? "bg-gray-600 hover:bg-gray-700"
+                      : enrollmentStep === "continue"
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-blue-700 hover:bg-blue-800"
                   }`}
                 >
-                  {loading ? (
-                    <>
-                      <p>Loading...</p>
-                    </>
-                  ) : (
-                    <>Save Enrollment</>
-                  )}
+                  {loading
+                    ? "Processing..."
+                    : enrollmentStep === "verify"
+                    ? "Verify"
+                    : enrollmentStep === "continue"
+                    ? "Continue"
+                    : "Submit"}
                 </button>
               </div>
             </form>
