@@ -14,7 +14,7 @@ const PayOutMenu = () => {
     },
     {
       id: "#2",
-      title: "Commission",
+      title: "Commission / Incentive",
       icon: <HiCurrencyRupee size={28} className="text-yellow-600" />,
        href:"/payment-out/commission"
     },

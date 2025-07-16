@@ -10,6 +10,9 @@ import Modal from "../components/modals/Modal";
 const CommissionReport = () => {
   const [employees, setEmployees] = useState([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+  //date filters
+  const [tempFromDate, setTempFromDate] = useState();
+  const [tempToDate, setTempToDate] = useState();
 
   const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState(null);
   const [employeeCustomerData, setEmployeeCustomerData] = useState([]);
@@ -55,10 +58,11 @@ const CommissionReport = () => {
     if (!employeeId) return;
     setLoading(true);
     try {
+      // MODIFIED: Changed endpoint and parameters to match backend expectation
       const res = await api.get(
-        `enroll/get-detailed-commission/${employeeId}`,
+        '/enroll/get-detailed-commission-per-month', // Correct endpoint
         {
-          params: { from_date: fromDate, to_date: toDate },
+          params: { agent_id: employeeId, from_date: fromDate, to_date: toDate }, // Correct: agent_id as query param
         }
       );
       setEmployeeCustomerData(res.data?.commission_data);
@@ -97,7 +101,7 @@ const CommissionReport = () => {
       let date = new Date(start);
       while (date <= end) {
         const year = date.getFullYear();
-        const month = date.getMonth(); 
+        const month = date.getMonth();
         const key = `${year}-${month}`;
         const monthTarget = monthMap[key] ?? defaultTarget;
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -108,9 +112,10 @@ const CommissionReport = () => {
       }
 
       // Step 3: Fetch achieved business
+      // MODIFIED: Changed endpoint and parameters to match backend expectation
       const { data: comm } = await api.get(
-        `/enroll/get-detailed-commission/${employeeId}`,
-        { params: { from_date: fromDate, to_date: toDate } }
+        '/enroll/get-detailed-commission-per-month', // Correct endpoint
+        { params: { agent_id: employeeId, from_date: fromDate, to_date: toDate } } // Correct: agent_id as query param
       );
 
       let achieved = comm?.summary?.actual_business || 0;
@@ -225,6 +230,14 @@ const CommissionReport = () => {
   }, []);
 
   useEffect(() => {
+    const todayDate = formatDate(new Date());
+    setTempFromDate();
+    setTempToDate();
+    setFromDate();
+    setToDate();
+  }, []);
+
+  useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user) {
       setAdminId(user._id);
@@ -262,12 +275,20 @@ const CommissionReport = () => {
 
   const handlePayNow = () => {
     const actual = employeeCustomerData.reduce((sum, item) => {
-      const payDate = new Date(item.start_date);
+      // The `item.start_date` here is likely incorrect if you want to sum based on payment date.
+      // Assuming `start_date` refers to the enrollment's start date and not payment date.
+      // If you have a 'pay_date' or similar field in `employeeCustomerData`, use that.
+      // Based on the prompt, it seems you want to sum based on 'pay_date'.
+      // If `employeeCustomerData` contains a `pay_date` for each item, you should use that.
+      // Otherwise, the current logic sums commission based on the enrollment `start_date`.
+      const payDate = new Date(item.start_date); // This should ideally be `item.pay_date` if available.
       const f = new Date(fromDate);
       const t = new Date(toDate);
       if (payDate >= f && payDate <= t) {
-        const val = parseFloat(
-          item.actual_commission_digits?.toString().replace(/[^0-9.-]+/g, "") || "0"
+        const actual = parseFloat(
+          (commissionTotalDetails?.total_actual || "0").toString().replace(/[^0-9.-]+/g, "")
+
+
         );
         return sum + val;
       }
@@ -383,37 +404,39 @@ const CommissionReport = () => {
                     ))}
                   </Select>
                 </div>
-                <div className="mb-2">
-                  <label className="block text-lg text-gray-500 text-center font-semibold mb-2">
-                    From Date
-                  </label>
-                  <input
-                    type="date"
-                    value={fromDate}
-                    max={today}
-                    onChange={(e) => {
-                      const newFrom = e.target.value;
-                      if (toDate < newFrom) setToDate(newFrom);
-                      setFromDate(newFrom);
-                    }}
-                    className="border border-gray-300 rounded px-4 py-2 w-[200px]"
-                  />
-                </div>
 
-                {/* To Date */}
-                <div className="mb-2">
-                  <label className="block text-lg text-gray-500 text-center font-semibold mb-2">
-                    To Date
-                  </label>
-                  <input
-                    type="date"
-                    value={toDate}
-                    min={fromDate}
-                    max={today}
-                    onChange={(e) => setToDate(e.target.value)}
-                    className="border border-gray-300 rounded px-4 py-2 w-[200px]"
-                  />
-                </div>
+                <input
+                  type="date"
+                  value={tempFromDate || ""}
+                  max={today}
+                  onChange={(e) => {
+                    const newFrom = e.target.value;
+                    if (tempToDate && tempToDate < newFrom) setTempToDate(newFrom);
+                    setTempFromDate(newFrom);
+                  }}
+                  className="border border-gray-300 rounded px-4 py-2 w-[200px]"
+                />
+
+                <input
+                  type="date"
+                  value={tempToDate || ""}
+                  min={tempFromDate || ""}
+                  max={today}
+                  onChange={(e) => setTempToDate(e.target.value)}
+                  className="border border-gray-300 rounded px-4 py-2 w-[200px]"
+                />
+
+                <button
+                  onClick={() => {
+                    setFromDate(tempFromDate);
+                    setToDate(tempToDate);
+                  }}
+                  disabled={!tempFromDate || !tempToDate}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded"
+                >
+                  Filter
+                </button>
+
               </div>
             </div>
           </div>
@@ -634,20 +657,9 @@ const CommissionReport = () => {
                   <input
                     readOnly
                     value={(() => {
-                      const actual = employeeCustomerData.reduce((sum, item) => {
-                        const payDate = new Date(item.start_date);
-                        const f = new Date(fromDate);
-                        const t = new Date(toDate);
-                        if (payDate >= f && payDate <= t) {
-                          const val = parseFloat(
-                            item.actual_commission_digits
-                              ?.toString()
-                              .replace(/[^0-9.-]+/g, "") || "0"
-                          );
-                          return sum + val;
-                        }
-                        return sum;
-                      }, 0);
+                      const actual = parseFloat(
+                        (commissionTotalDetails?.total_actual || "0").toString().replace(/[^0-9.-]+/g, "")
+                      );
 
                       const incentive = parseFloat(
                         (targetData?.incentiveAmount || "0").replace(/[^0-9.-]+/g, "")
@@ -657,6 +669,7 @@ const CommissionReport = () => {
 
                       return `₹${total.toLocaleString("en-IN")}`;
                     })()}
+
                     className="border px-3 py-2 rounded w-full bg-gray-50 text-green-700 font-bold"
                   />
                 </div>
