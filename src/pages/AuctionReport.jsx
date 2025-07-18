@@ -138,7 +138,11 @@ const AuctionReport = () => {
               phone_number: group.user_id?.phone_number,
               ticket: group.ticket,
               bid_amount: parseInt(group.divident) + parseInt(group.commission),
-              amount: group.win_amount,
+               status: !group?.isPrized
+              ? "Un Prized"
+              : group?.isPrized === "true"
+              ? "Prized"
+              : "Un Prized",
               auction_type:
                 group?.auction_type.charAt(0).toUpperCase() +
                 group?.auction_type.slice(1) +
@@ -202,6 +206,7 @@ const AuctionReport = () => {
     { key: "bid_amount", header: "Bid Amount" },
     { key: "amount", header: "Win Amount" },
     { key: "auction_type", header: "Auction Type" },
+     { key: "status", header: "Status" },
     { key: "action", header: "Action" },
   ];
 

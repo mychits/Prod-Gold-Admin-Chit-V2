@@ -98,12 +98,10 @@ const Auction = () => {
       newErrors.auction_type = "Auction type is required";
     }
 
-    // Customer validation
     if (!formData.user_id) {
       newErrors.customer = "Customer selection is required";
     }
 
-    // Bid Amount validation
     if (!formData.bid_amount) {
       newErrors.bid_amount = "Bid amount is required";
     } else if (
@@ -118,7 +116,6 @@ const Auction = () => {
       newErrors.bid_amount = `Bid amount cannot exceed group value of ${groupInfo.group_value}`;
     }
 
-    // Date validations
     if (!formData.auction_date) {
       newErrors.auction_date = "Auction date is required";
     }
@@ -241,6 +238,12 @@ const Auction = () => {
               ticket: group.ticket,
               bid_amount: parseInt(group.divident) + parseInt(group.commission),
               amount: group.win_amount,
+
+              status: !group?.isPrized
+                ? "Un Prized"
+                : group?.isPrized === "true"
+                ? "Prized"
+                : "Un Prized",
               auction_type:
                 group?.auction_type.charAt(0).toUpperCase() +
                 group?.auction_type.slice(1) +
@@ -255,7 +258,9 @@ const Auction = () => {
                           label: (
                             <div
                               className="text-green-600"
-                              onClick={() => handleUpdateModalOpen(group._id,index+2)}
+                              onClick={() =>
+                                handleUpdateModalOpen(group._id, index + 2)
+                              }
                             >
                               Edit
                             </div>
@@ -306,12 +311,14 @@ const Auction = () => {
     { key: "bid_amount", header: "Bid Amount" },
     { key: "amount", header: "Win Amount" },
     { key: "auction_type", header: "Auction Type" },
+    { key: "status", header: "Status" },
     { key: "action", header: "Action" },
   ];
 
   useEffect(() => {
     if (groupInfo && formData.bid_amount) {
-      const commission = (groupInfo.group_value * groupInfo.group_commission) / 100 || 0;
+      const commission =
+        (groupInfo.group_value * groupInfo.group_commission) / 100 || 0;
       const win_amount =
         (groupInfo.group_value || 0) - (formData.bid_amount || 0);
       const divident = (formData.bid_amount || 0) - commission;
@@ -380,10 +387,10 @@ const Auction = () => {
     }
   };
 
-  const handleUpdateModalOpen = async (groupId,si) => {
+  const handleUpdateModalOpen = async (groupId, si) => {
     try {
       const response = await api.get(`/auction/get-auction-by-id/${groupId}`);
-      setCurrentUpdateGroup({...response.data,SI_number:si});
+      setCurrentUpdateGroup({ ...response.data, SI_number: si });
       setShowModalUpdate(true);
     } catch (error) {
       console.error("Error fetching auction:", error);
@@ -662,7 +669,7 @@ const Auction = () => {
                       value={formData.win_amount}
                       id="win_amount"
                       placeholder=""
-                      readOnly
+                     readOnly
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
                     />
                   </div>
@@ -791,12 +798,12 @@ const Auction = () => {
 
               <form className="space-y-6" onSubmit={() => {}}>
                 <div className="flex flex-row justify-between space-x-4">
-                  <div  className="w-1/2">
+                  <div className="w-1/2">
                     <label
                       className="block mb-2 text-sm font-medium text-gray-900"
                       htmlFor="email"
                     >
-                      SI No 
+                      SI No
                     </label>
                     <input
                       type="text"
@@ -808,8 +815,8 @@ const Auction = () => {
                       readOnly
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
                     />
-                     </div>
-                      <div  className="w-1/2">
+                  </div>
+                  <div className="w-1/2">
                     <label
                       className="block mb-2 text-sm font-medium text-gray-900"
                       htmlFor="email"

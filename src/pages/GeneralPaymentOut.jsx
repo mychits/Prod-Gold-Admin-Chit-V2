@@ -1,370 +1,75 @@
+// export default GeneralPaymentOut;
 /* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
 import Sidebar from "../components/layouts/Sidebar";
 import api from "../instance/TokenInstance";
-import Modal from "../components/modals/Modal";
+import { Modal } from "antd";
+import { Dropdown } from "antd";
 import DataTable from "../components/layouts/Datatable";
 import CustomAlert from "../components/alerts/CustomAlert";
-import CircularLoader from "../components/loaders/CircularLoader";
-import { FaWhatsappSquare } from "react-icons/fa";
 import Navbar from "../components/layouts/Navbar";
-import { Select, Modal as AntModal, Drawer, Tooltip } from "antd";
-import { useParams } from "react-router-dom";
-import BackdropBlurLoader from "../components/loaders/BackdropBlurLoader";
-import { FaReceipt } from "react-icons/fa";
-import { fieldSize } from "../data/fieldSize";
-
-import { Dropdown } from "antd";
+import { Select } from "antd";
 import { IoMdMore } from "react-icons/io";
-import { Link } from "react-router-dom";
+import filterOption from "../helpers/filterOption";
+import CircularLoader from "../components/loaders/CircularLoader";
 
 const GeneralPaymentOut = () => {
-  const { paymentType } = useParams();
   const [groups, setGroups] = useState([]);
-  const [actualGroups, setActualGroups] = useState([]);
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const [TablePayments, setTablePayments] = useState([]);
+  const [TableAuctions, setTableAuctions] = useState([]);
+  const [paymentMode, setPaymentMode] = useState("cash");
   const [selectedAuctionGroup, setSelectedAuctionGroup] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedAuctionGroupId, setSelectedAuctionGroupId] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [userName, setUserName] = useState("");
-  const [viewLoader, setViewLoader] = useState(false);
   const [filteredAuction, setFilteredAuction] = useState([]);
-  const [groupInfo, setGroupInfo] = useState({});
-  const [showModal, setShowModal] = useState(false);
-  const [showModalDelete, setShowModalDelete] = useState(false);
-  const [currentUpdateAmount, setCurrentUpdateAmount] = useState(false);
-  const [currentGroup, setCurrentGroup] = useState(null);
-  const [showModalView, setShowModalView] = useState(false);
-  const [currentViewGroup, setCurrentViewGroup] = useState(null);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [receiptNo, setReceiptNo] = useState("");
-  const whatsappEnable = true;
-  const [paymentMode, setPaymentMode] = useState("cash");
-  const today = new Date().toISOString().split("T")[0];
+  const [showModalUpdate, setShowModalUpdate] = useState(false);
+  const [currentUpdateGroup, setCurrentUpdateGroup] = useState(null);
+  const [double, setDouble] = useState({});
+  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [disabled, setDisabled] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [enableGroupColumn, setEnableGroupColumn] = useState(true);
-  const [paymentGroupTickets, setPaymentGroupTickets] = useState([]);
-  const [render, setRerender] = useState(0);
-  const [openBackdropLoader, setOpenBackdropLoader] = useState(false);
-  const [currentGroupId, setCurrentGroupId] = useState(null);
-  const [openAntDDrawer, setOpenAntDDrawer] = useState(false);
-  const [showLoader, setShowLoader] = useState(false);
-  const [lastThreePayments, setLastThreePayments] = useState([]);
+  const today = new Date().toISOString().split("T")[0];
+  const [modifyPayment, setModifyPayment] = useState(false);
   const [adminName, setAdminName] = useState("");
-  const [showOthersField, setShowOthersField] = useState(false);
-
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [currentUpdateId, setCurrentUpdateId] = useState(null);
-
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState(null);
+  const [disabled, setDisabled] = useState(false);
+  const [openBackdropLoader, setOpenBackdropLoader] = useState(false);
+  const [paymentGroupTickets, setPaymentGroupTickets] = useState([]);
   const [disbursementType, setDisbursementType] = useState("");
-  const disbursementTypes = [
-    {
-      key: "#1",
-      title: "Auction Winning Payout",
-      value: "Auction Winning Payout",
-    },
-    {
-      key: "#2",
-      title: "Chit Cancellation",
-      value: "Chit Cancellation",
-    },
-    {
-      key: "#3",
-      title: "Refund to Member",
-      value: "Refund to Member",
-    },
-    {
-      key: "#4",
-      title: "Foreman Commission Disbursement",
-      value: "Refund to Member",
-    },
+  const [showOthersField, setShowOthersField] = useState(false);
+  const [paymentType, setPaymentType] = useState("Auction Winning Payout");
+  const [rerender, setRerender] = useState(0);
 
-    {
-      key: "#6",
-      title: "Reinvestment Transfer",
-      value: "Reinvestment Transfer",
-    },
-    {
-      key: "#7",
-      title: "Advance Payout Before Auction",
-      value: "Advance Payout Before Auction",
-    },
-    {
-      key: "#8",
-      title: "Divident Share Disbursement",
-      value: "Divident Share Disbursement",
-    },
-    {
-      key: "#9",
-      title: "Group Closure Settlement",
-      value: "Group Closure Settlement",
-    },
-    {
-      key: "#10",
-      title: "Emergency Withdrawal",
-      value: "Emergency Withdrawal",
-    },
-    {
-      key: "#11",
-      title: "Mistaken Payment Reversal",
-      value: "Mistaken Payment Reversal",
-    },
-    {
-      key: "#12",
-      title: "Others",
-      value: "Others",
-    },
-  ];
-
-  const onGlobalSearchChangeHandler = (e) => {
-    const { value } = e.target;
-    setSearchText(value);
-  };
   const [alertConfig, setAlertConfig] = useState({
     visibility: false,
     message: "Something went wrong!",
-    noReload: false,
     type: "info",
   });
 
-  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
+    group_id:"",
     user_id: "",
-
     pay_date: today,
+    ticket: "",
     amount: "",
     pay_type: "cash",
     transaction_id: "",
-    payment_group_tickets: [],
     disbursement_type: "Auction Winning Payout",
     note: "",
   });
-  const [updateFormData, setUpdateFormData] = useState({
-    amount: "",
-    pay_date: "",
-  });
-  const [modifyPayment, setModifyPayment] = useState(false);
 
-  useEffect(() => {
-    const user = localStorage.getItem("user");
-    const userObj = JSON.parse(user);
-    setAdminName(userObj.name || "");
-
-    if (
-      userObj &&
-      userObj.admin_access_right_id?.access_permissions?.edit_payment
-    ) {
-      const isModify =
-        userObj.admin_access_right_id?.access_permissions?.edit_payment ===
-        "true"
-          ? true
-          : false;
-      setModifyPayment(isModify);
-    }
-  }, []);
-
-  const dropDownItems = (group) => [
-    {
-      key: "1",
-      label: (
-        <Link to={`/print-payment-out/${group._id}`} className="text-blue-600">
-          Print
-        </Link>
-      ),
-    },
-    // {
-    //   key: "2",
-    //   label: (
-    //     <div
-    //       className="text-green-600"
-    //       onClick={() => handleViewModalOpen(group._id)}
-    //     >
-    //       View
-    //     </div>
-    //   ),
-    // },
-    {
-      key: "3",
-      label: (
-        <div
-          className="text-red-600"
-          onClick={() => handleDeleteModalOpen(group._id)}
-        >
-          Delete
-        </div>
-      ),
-    },
-    {
-      key: "4",
-      label: (
-        <div
-          className="text-blue-600"
-          onClick={() => handleUpdateModalOpen(group._id)}
-        >
-          Edit
-        </div>
-      ),
-    },
-  ];
-
-  useEffect(() => {
-    const usr = localStorage.getItem("user");
-    let admin_type = null;
-
-    try {
-      if (usr) {
-        admin_type = JSON.parse(usr);
-      }
-    } catch (e) {
-      console.error("Failed to parse user from localStorage:", e);
-    }
-
-    const fetchTodaysPayments = async () => {
-      try {
-        setTablePayments([]);
-        setIsLoading(true);
-        const response = await api.get(
-          "/payment-out/get-payment-out-report-daybook",
-          {
-            params: {
-              pay_date: today,
-              pay_for: paymentType,
-            },
-          }
-        );
-        if (response.data && response.data.length > 0) {
-          const formattedData = response.data.map((group, index) => {
-            if (!group?.group_id?.group_name) return {};
-            return {
-              _id: group._id,
-              id: index + 1,
-              name: group?.user_id?.full_name,
-              phone_number: group?.user_id?.phone_number,
-              group_name: group?.group_id?.group_name,
-              ticket: group.ticket,
-              receipt: group.receipt_no,
-              old_receipt: group.old_receipt_no,
-              amount: group.amount,
-              date: formatPayDate(group.pay_date),
-              transaction_date: formatPayDate(group.createdAt),
-              disbursed_by: group?.admin_type?.admin_name || "Super Admin",
-              disbursement_type: group.disbursement_type,
-              note: group.note,
-              action: (
-                <div className="flex justify-center gap-2">
-                  <Dropdown
-                    trigger={["click"]}
-                    menu={{ items: dropDownItems(group) }}
-                    placement="bottomLeft"
-                  >
-                    <IoMdMore className="cursor-pointer text-xl" />
-                  </Dropdown>
-                </div>
-              ),
-            };
-          });
-          setTablePayments(formattedData);
-          setEnableGroupColumn(true);
-        } else {
-          setFilteredAuction([]);
-        }
-      } catch (error) {
-        console.error("Error fetching payment data:", error);
-        setFilteredAuction([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTodaysPayments();
-  }, [render]);
-
-  const fetchLastThreeTransactions = async (event) => {
-    event.preventDefault();
-    setOpenAntDDrawer(true);
-    if (formData.user_id && formData.payment_group_tickets) {
-      try {
-        setShowLoader(true);
-        const response = await api.get("payment-out/get-last-n-transaction", {
-          params: {
-            user_id: formData.user_id,
-            payment_group_tickets: paymentGroupTickets,
-            limit: 3,
-            pay_for: paymentType,
-          },
-        });
-        if (response?.data) {
-          setLastThreePayments(response.data);
-        } else {
-          setLastThreePayments([]);
-        }
-      } catch (error) {
-        setLastThreePayments([]);
-      } finally {
-        setShowLoader(false);
-      }
-    }
+  const onGlobalSearchChangeHandler = (e) => {
+    setSearchText(e.target.value);
   };
 
-  useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const response = await api.get("/user/get-user");
-        setGroups(response.data);
-      } catch (error) {
-        console.error("Error fetching group data:", error);
-      }
-    };
-    fetchGroups();
-  }, [alertConfig]);
-
-  useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const response = await api.get("/group/get-group-admin");
-        setActualGroups(response.data);
-      } catch (error) {
-        console.error("Error fetching group data:", error);
-      }
-    };
-    fetchGroups();
-  }, [alertConfig]);
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!selectedGroupId) {
-      newErrors.customer = "Please select a customer";
-    }
-
-    if (!formData.payment_group_tickets) {
-      newErrors.payment_group_tickets = "Please select a group and ticket";
-    }
-
-    if (!formData.pay_date) {
-      newErrors.pay_date = "Payment date is required";
-    }
-
-    const amount = parseFloat(formData.amount);
-    if (isNaN(amount) || amount <= 0) {
-      newErrors.amount = "Please enter a valid positive amount";
-    }
-
-    if (paymentMode === "online" && !formData.transaction_id?.trim()) {
-      newErrors.transaction_id =
-        "Transaction ID is required for online payments";
-    }
-    if (!formData.disbursement_type) {
-      newErrors.disbursement_type = "Disbursement Type is Required";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handlePaymentModeChange = (e) => {
+    const selectedMode = e.target.value;
+    setPaymentMode(selectedMode);
+    setFormData((prev) => ({
+      ...prev,
+      pay_type: selectedMode,
+      transaction_id: selectedMode === "online" ? prev.transaction_id : "",
+    }));
   };
 
   const handleChange = (e) => {
@@ -375,97 +80,210 @@ const GeneralPaymentOut = () => {
         setDisbursementType("");
       } else {
         setShowOthersField(false);
+        setDisbursementType(value);
       }
     }
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-    setErrors((prevData) => ({ ...prevData, [name]: "" }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handlePaymentAntSelect = (value) => {
-    // ✅ Now value is a string like "chit-<group_id>|<ticket>"
-    setPaymentGroupTickets([value]); // Still store as array for backend compatibility
+  const validateForm = () => {
+    const newErrors = {};
+    if (!selectedGroupId) newErrors.customer = "Please select a customer";
+    if (!formData.ticket)
+      newErrors.payment_group_tickets = "Please Provide ticket";
+    if (!formData.pay_date) newErrors.pay_date = "Payment date is required";
 
-    if (value && value.startsWith("chit-")) {
-      const [, entity] = value.split("-");
-      const [groupId, ticket] = entity.split("|");
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount) || amount <= 0)
+      newErrors.amount = "Please enter a valid positive amount";
 
-      // Call win amount fetch
-      fetchWinAmount(formData.user_id, groupId, ticket);
+    if (paymentMode === "online" && !formData.transaction_id?.trim())
+      newErrors.transaction_id =
+        "Transaction ID is required for online payments";
+    if (!formData.disbursement_type)
+      newErrors.disbursement_type = "Disbursement Type is Required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const { data } = await api.get("/group/get-group-admin");
+        setGroups(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchGroups();
+  }, []);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    setAdminName(user.name || "");
+    const canEdit =
+      user?.admin_access_right_id?.access_permissions?.edit_payment === "true";
+    setModifyPayment(canEdit);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedAuctionGroupId) return;
+    const fetchDouble = async () => {
+      try {
+        const { data } = await api.get(
+          `/double/get-double/${selectedAuctionGroupId}`
+        );
+        setDouble(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchDouble();
+  }, [selectedAuctionGroupId]);
+
+  const handleGroupAuction = (groupId) => {
+    setSelectedAuctionGroupId(groupId);
+    handleGroupAuctionChange(groupId);
+  };
+
+  const handleGroupAuctionChange = async (groupId) => {
+    setSelectedAuctionGroup(groupId);
+    if (!groupId) {
+      setFilteredAuction([]);
+      return;
+    }
+
+    setTableAuctions([]);
+    setIsLoading(true);
+    try {
+      const { data } = await api.get(`/auction/get-group-auction/${groupId}`);
+      if (data?.length) {
+        setFilteredAuction(data);
+        const formatted = [
+          {
+            id: 1,
+            date: new Date(
+              new Date(data[0].auction_date).getTime() - 10 * 86400000
+            )
+              .toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })
+              .replace(",", ""),
+            name: "Commencement",
+            phone_number: "Commencement",
+            ticket: "Commencement",
+            bid_amount: 0,
+            amount: 0,
+            auction_type: "Commencement Auction",
+          },
+          ...data.map((g, idx) => ({
+            _id: g._id,
+            id: idx + 2,
+            date: new Date(g.auction_date).toLocaleDateString("en-US", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            }),
+            name: g.user_id?.full_name,
+            phone_number: g.user_id?.phone_number,
+            ticket: g.ticket,
+            bid_amount: Number(g.divident) + Number(g.commission),
+            amount: g.win_amount,
+            auction_type:
+              g.auction_type.charAt(0).toUpperCase() +
+              g.auction_type.slice(1) +
+              " Auction",
+            status: !g?.isPrized
+              ? "Un Prized"
+              : g?.isPrized === "true"
+              ? "Prized"
+              : "Un Prized",
+            action: (
+              <div className="flex justify-center gap-2">
+                <Dropdown
+                  trigger={["click"]}
+                  menu={{
+                    items: [
+                      {
+                        key: "1",
+                        label: (
+                          <div
+                            className="text-green-600"
+                            onClick={() =>
+                              handlePaymentOut(
+                                g.group_id?._id,
+                                g.user_id?._id,
+                                g.ticket
+                              )
+                            }
+                          >
+                            Payment out
+                          </div>
+                        ),
+                      },
+                      {
+                        key: "2",
+                        label: (
+                          <div
+                            className="text-blue-600"
+                            onClick={() =>
+                              handleUpdateModalOpen(g._id, idx + 2)
+                            }
+                          >
+                            View
+                          </div>
+                        ),
+                      },
+                    ],
+                  }}
+                  placement="bottomLeft"
+                >
+                  <IoMdMore className="text-bold" />
+                </Dropdown>
+              </div>
+            ),
+          })),
+        ];
+        setTableAuctions(formatted);
+      } else {
+        setFilteredAuction([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setFilteredAuction([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
- const handleGroupChange = async (groupId) => {
-  setSelectedGroup(groupId);
-
-  if (groupId) {
+  const handlePaymentOut = async (groupId, userId, ticket) => {
+    if (!userId || !groupId || !ticket) return;
     try {
-      const response = await api.get(`/enroll/get-group-enroll/${groupId}`);
-
-      if (response.data && response.data.length > 0) {
-        setFilteredUsers(response.data);
-      } else {
-        setFilteredUsers([]);
-      }
-    } catch (error) {
-      if (error.response?.status === 404) {
-        console.warn("No enrollments found for this group.");
-        setAlertConfig({
-          visibility: true,
-          type: "info",
-          message: "No enrollments found for the selected group.",
-          noReload: true,
-        });
-      } else {
-        console.error("Error fetching enrollment data:", error);
-        setAlertConfig({
-          visibility: true,
-          type: "error",
-          message: "Failed to fetch enrollment data. Please try again.",
-          noReload: true,
-        });
-      }
-      setFilteredUsers([]);
-    }
-  } else {
-    setFilteredUsers([]);
-  }
-};
-
-
-  const fetchWinAmount = async (userId, groupId, ticket) => {
-    try {
-      if (!userId || !groupId || !ticket) return;
-
-      const response = await api.get(
+      const { data } = await api.get(
         "/auction/get-auction-by-user-group-ticket",
-        {
-          params: { user_id: userId, group_id: groupId, ticket },
-        }
+        { params: { user_id: userId, group_id: groupId, ticket } }
       );
-
-      if (response?.data?.win_amount) {
-        setFormData((prev) => ({
-          ...prev,
-          amount: response.data.win_amount,
-        }));
-        console.log("✅ Win Amount Set:", response.data.win_amount);
-      } else {
-        Modal.warning({
-          title: "No Win Amount Found",
-          content:
-            "No win amount was returned for this user, group, and ticket.",
-        });
-      }
+      setPaymentDetails({
+        customerName: data.user_id?.full_name,
+        groupName: data.group_id?.group_name,
+        winAmount: data.win_amount,
+      });
+      setFormData((prev) => ({
+        ...prev,
+        group_id:data.group_id?._id,
+        user_id: userId,
+        amount: data.win_amount,
+        ticket,
+      }));
+      setSelectedGroupId(groupId);
+      setShowPaymentModal(true);
     } catch (error) {
-      const backendMessage = error?.response?.data?.message;
-
-      if (
-        error.response?.status === 404 &&
-        backendMessage === "Auction not found"
-      ) {
+      const msg = error?.response?.data?.message;
+      if (error.response?.status === 404 && msg === "Auction not found") {
         Modal.warning({
           title: "Auction Not Found",
           content:
@@ -477,1104 +295,490 @@ const GeneralPaymentOut = () => {
           content: "Something went wrong while trying to fetch win amount.",
         });
       }
-
-      console.error("❌ Error fetching win amount:", error);
     }
   };
 
-  const columns = [
-    { key: "id", header: "SL. NO" },
-    { key: "date", header: "Paid Date" },
-    { key: "transaction_date", header: "Transaction Date" },
-    { key: "name", header: "Customer Name" },
-    { key: "phone_number", header: "Customer Phone Number" },
-  ];
-  if (enableGroupColumn) {
-    columns.push({ key: "group_name", header: "Group Name" });
-  }
-  columns.push(
-    { key: "ticket", header: "Ticket Number" },
-    { key: "old_receipt", header: "Old Receipt" },
-    { key: "receipt", header: "Receipt" },
-    { key: "amount", header: "Amount" },
-    { key: "disbursed_by", header: "Disbursed By" },
-    { key: "disbursement_type", header: "Disbursement Type" },
-    { key: "note", header: "Note" },
-    { key: "action", header: "Action" }
-  );
-  // const handleGroup = async (event) => {
-  //   const groupId = event.target.value;
-  //   setSelectedGroupId(groupId);
-  //   setFormData((prevFormData) => ({
-  //     ...prevFormData,
-  //     user_id: groupId,
-  //   }));
-  //   setErrors((prevData) => ({ ...prevData, customer: "" }));
-
-  //   handleGroupChange(groupId);
-  //   handleGroupAuctionChange(groupId);
-
-  //   if (groupId) {
-  //     try {
-  //       const response = await api.get(`/group/get-by-id-group/${groupId}`);
-  //       setGroupInfo(response.data || {});
-  //     } catch (error) {
-  //       setGroupInfo({});
-  //     }
-  //   } else {
-  //     setGroupInfo({});
-  //   }
-  // };
-
-  // const handleInputChange = (e) => {
-  //   const { name, value } = e.target;
-  //   setUpdateFormData((prevData) => ({
-  //     ...prevData,
-  //     [name]: value,
-  //   }));
-  // };
-
-  const handleCustomer = async (userId) => {
-    setSelectedGroupId(userId);
-
-    // ✅ Reset previously selected ticket & amount
-    setPaymentGroupTickets([]);
-    setFormData((prev) => ({
-      ...prev,
-      user_id: userId,
-      amount: "", // 🔥 Clear previous win amount
-    }));
-    setErrors((prev) => ({ ...prev, customer: "" }));
-
-    // 👇 Fetch ticket data and group info
-    handleGroupChange(userId);
-    handleGroupAuctionChange(userId);
-
+  const handleUpdateModalOpen = async (groupId, si) => {
     try {
-      const response = await api.get(`/group/get-by-id-group/${userId}`);
-      setGroupInfo(response.data || {});
-    } catch (error) {
-      setGroupInfo({});
+      const { data } = await api.get(`/auction/get-auction-by-id/${groupId}`);
+      setCurrentUpdateGroup({ ...data, SI_number: si });
+      setShowModalUpdate(true);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handleGroupPayment = async (groupId) => {
-    setSelectedAuctionGroupId(groupId);
-    handleGroupPaymentChange(groupId);
-  };
-
-  const formatPayDate = (dateString) => {
-    return dateString?.split("T")[0];
-  };
-
-  const handleGroupPaymentChange = async (groupId) => {
-    setSelectedAuctionGroup(groupId);
-    if (groupId) {
-      let url;
-      if (groupId === "today") {
-        url = `/payment-out/get-payment-out-report-daybook/?pay_date=${today}&pay_for=${paymentType}`;
-        setEnableGroupColumn(true);
-      } else {
-        url = `/payment-out/get-group-payment-out/?group_id=${groupId}&pay_for=${paymentType}`;
-        setEnableGroupColumn(false);
-      }
-      try {
-        setTablePayments([]);
-        setIsLoading(true);
-        const response = await api.get(url);
-
-        if (response.data && response.data.length > 0) {
-          const formattedData = response.data.map((group, index) => {
-            if (!group?.group_id?.group_name) return {};
-            return {
-              _id: group._id,
-              id: index + 1,
-              name: group?.user_id?.full_name,
-              phone_number: group?.user_id?.phone_number,
-              group_name: group?.group_id?.group_name,
-              ticket: group.ticket,
-              receipt: group.receipt_no,
-              old_receipt: group.old_receipt_no,
-              amount: group.amount,
-              date: formatPayDate(group.pay_date),
-              transaction_date: formatPayDate(group.createdAt),
-              disbursed_by: group?.admin_type?.admin_name || "Super Admin",
-              disbursement_type: group.disbursement_type,
-              note: group.note,
-              action: (
-                <div className="flex justify-center gap-2">
-                  <Dropdown
-                    trigger={["click"]}
-                    menu={{ items: dropDownItems(group) }}
-                    placement="bottomLeft"
-                  >
-                    <IoMdMore className="cursor-pointer text-xl" />
-                  </Dropdown>
-                </div>
-              ),
-            };
-          });
-
-          setTablePayments(formattedData);
-        } else {
-          setFilteredAuction([]);
-        }
-      } catch (error) {
-        console.error("Error fetching payment data:", error);
-        setFilteredAuction([]);
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setFilteredAuction([]);
-    }
-  };
-
-  const handlePaymentModeChange = (e) => {
-    const selectedMode = e.target.value;
-    setPaymentMode(selectedMode);
-    setFormData((prevData) => ({
-      ...prevData,
-      pay_type: selectedMode,
-
-      transaction_id: selectedMode === "online" ? prevData.transaction_id : "",
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     const isValid = validateForm();
+  
+
+    if (!isValid) return;
+
     try {
-      if (isValid) {
-        setDisabled(true);
-        setAlertConfig((prev) => ({
-          ...prev,
-          visibility: false,
-        }));
-        setShowModal(false);
-        let payload;
-        const usr = localStorage.getItem("user");
-        let admin_type = null;
+      setDisabled(true);
+      setShowPaymentModal(false);
+      setAlertConfig((prev) => ({ ...prev, visibility: false }));
+
+      const usr = localStorage.getItem("user");
+      let admin_type = null;
+
+      if (usr) {
         try {
-          if (usr) {
-            admin_type = JSON.parse(usr);
-          }
+          admin_type = JSON.parse(usr);
         } catch (e) {
           console.error("Failed to parse user from localStorage:", e);
         }
-        if (formData.disbursement_type === "Others") {
-          formData.disbursement_type = disbursementType;
-        }
-        formData.payment_group_tickets = paymentGroupTickets;
-        formData.admin_type = admin_type?._id;
-        formData.pay_for = paymentType;
-        setOpenBackdropLoader(true);
-        console.log(formData, "formData this is formData");
-        const response = await api.post(
-          "/payment-out/add-payments-out",
-          formData
-        );
-
-        if (response.status === 201) {
-          setSelectedGroupId("");
-          setPaymentGroupTickets([]);
-          setDisabled(false);
-          setFormData({
-            user_id: "",
-            pay_date: today,
-            amount: "",
-            pay_type: "cash",
-            transaction_id: "",
-            payment_group_tickets: [],
-            disbursement_type: "",
-            note: "",
-          });
-          setAlertConfig({
-            visibility: true,
-            noReload: true,
-            message: "Payment Added Successfully",
-            type: "success",
-          });
-        }
-
-        if (response.status >= 400) {
-          setShowModal(false);
-          setSelectedGroupId("");
-          setPaymentGroupTickets([]);
-          setDisabled(false);
-          setFormData({
-            user_id: "",
-            pay_date: today,
-            amount: "",
-            pay_type: "cash",
-            transaction_id: "",
-            payment_group_tickets: [],
-            disbursement_type: "",
-            note: "",
-          });
-          setAlertConfig({
-            visibility: true,
-            noReload: true,
-            message: "Payment Added Failed",
-            type: "error",
-          });
-        }
       }
+
+      if (formData.disbursement_type === "Others" && disbursementType) {
+        formData.disbursement_type = disbursementType;
+      }
+
+      const formattedTickets = paymentGroupTickets.map(
+        ({ group_id, ticket }) => ({
+          group_id,
+          ticket_number: ticket,
+        })
+      );
+
+      const payload = {
+        ...formData,
+        payment_group_tickets: formattedTickets,
+        admin_type: admin_type?._id,
+        pay_for: paymentType,
+      };
+
+      if (
+        !formattedTickets.length &&
+        selectedGroupId &&
+        paymentGroupTickets[0]?.ticket
+      ) {
+        payload.group_id = selectedGroupId;
+        payload.ticket = paymentGroupTickets[0].ticket;
+      }
+
+      setOpenBackdropLoader(true);
+
+      const response = await api.post(
+        "/payment-out/add-payments-and-mark-prized",
+        payload
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        console.log(" Payment out successful & auction updated");
+
+        setSelectedGroupId("");
+        setPaymentGroupTickets([]);
+        setFormData({
+          group_id:"",
+          user_id: "",
+          pay_date: today,
+          amount: "",
+          pay_type: "cash",
+          transaction_id: "",
+          ticket: "",
+          disbursement_type: "Auction Winning Payout",
+          note: "",
+        });
+      }
+      window.location.reload();
     } catch (error) {
-      setShowModal(false);
+      console.error(" Error submitting payment data:", error);
+      setShowPaymentModal(false);
       setSelectedGroupId("");
       setFormData({
-        user_id: "",
-        pay_date: "",
-        amount: "",
-        pay_type: "cash",
-        transaction_id: "",
-        payment_group_tickets: [],
-        disbursement_type: "",
-        note: "",
-      });
-      setAlertConfig({
-        visibility: true,
-        noReload: true,
-        message: `Error submitting payment data`,
-        type: "error",
-      });
-      setDisabled(false);
-      console.error("Error submitting payment data:", error);
-    } finally {
-      setOpenBackdropLoader(false);
-      setRerender((prev) => prev + 1);
-    }
-  };
-
-  const handleDeleteModalOpen = async (groupId) => {
-    try {
-      const response = await api.get(
-        `/payment-out/get-payment-out-by-id/${groupId}`
-      );
-      setCurrentGroup(response.data);
-      setShowModalDelete(true);
-    } catch (error) {
-      console.error("Error fetching payment out for delete:", error);
-    }
-  };
-
-  const handleDeleteAuction = async () => {
-    if (currentGroup) {
-      try {
-        await api.delete(`/payment-out/delete-payment/${currentGroup._id}`);
-        setShowModalDelete(false);
-        setCurrentGroup(null);
-        setAlertConfig({
-          visibility: true,
-          message: "Payment Out deleted successfully",
-          type: "success",
-        });
-        setRerender((prev) => prev + 1); // Refresh the table
-      } catch (error) {
-        console.error("Error deleting payment out:", error);
-      }
-    }
-  };
-
-  const handleViewModalOpen = async (groupId) => {
-    try {
-      setLoading(true);
-      setViewLoader(true);
-      const response = await api.get(
-        `/payment-out/get-payment-out-by-id/${groupId}`
-      );
-      setCurrentViewGroup(response.data);
-      setShowModalView(true); // Show modal after data is ready
-    } catch (error) {
-      console.error("Error viewing PaymentOut:", error);
-    } finally {
-      setLoading(false);
-      setViewLoader(false);
-    }
-  };
-
-const handleUpdateModalOpen = async (groupId) => {
-  try {
-    setViewLoader(true);
-    setLoading(true);
-
-    // Step 1: Fetch payment out data
-    const response = await api.get(`/payment-out/get-payment-out-by-id/${groupId}`);
-    const data = response.data;
-
-    // Step 2: Load group & ticket options for the customer
-    await handleCustomer(data.user_id?._id); // Important: Await this!
-
-    // Step 3: Set form fields including group and ticket
-    setFormData({
-      user_id: data?.user_id?._id || "",
-      group_id: data?.group_id?._id || "",
-      ticket: data?.ticket || "",
-      amount: data?.amount || "",
-      pay_type: data?.pay_type || "",
-      pay_date: data?.pay_date?.split("T")[0] || "",
-      disbursement_type: data?.disbursement_type || "",
-      note: data?.note || "",
-    });
-
-    // NEW ADDITION: Set paymentGroupTickets for the selected group and ticket
-    if (data.group_id?._id && data.ticket) {
-      setPaymentGroupTickets([`chit-${data.group_id._id}|${data.ticket}`]);
-    } else {
-      setPaymentGroupTickets([]);
-    }
-
-    setCurrentUpdateId(data._id);
-    setIsEditMode(true);
-    setShowModal(true);
-  } catch (error) {
-    console.error("Error opening edit modal:", error);
-  } finally {
-    setLoading(false);
-    setViewLoader(false);
-  }
-};
-
-const handleUpdate = async (e) => {
-  e.preventDefault();
-
-  try {
-    if (!currentUpdateId) {
-      console.error("❌ Missing currentUpdateId, cannot proceed with update.");
-      return;
-    }
-
-    const response = await api.put(
-      `/payment-out/update-payment-amount/${currentUpdateId}`,
-      formData
-    );
-
-    if (response.status === 200) {
-      // ✅ First show the alert
-      setAlertConfig({
-        visibility: true,
-        message: "Payment Out updated successfully",
-        type: "success",
-        noReload: false,
-      });
-
-      // ✅ Then auto-close the alert after 2 seconds
-      setTimeout(() => {
-        setAlertConfig((prev) => ({
-          ...prev,
-          visibility: false,
-        }));
-      }, 2000);
-
-      // ✅ Then close modal and reset state
-      setShowModal(false);
-      setIsEditMode(false);
-      setCurrentUpdateId(null);
-
-      setFormData({
+         group_id:"",
         user_id: "",
         pay_date: today,
         amount: "",
         pay_type: "cash",
         transaction_id: "",
-        payment_group_tickets: [],
+        ticket: "",
         disbursement_type: "Auction Winning Payout",
         note: "",
       });
-
+      
+    } finally {
+      setOpenBackdropLoader(false);
       setRerender((prev) => prev + 1);
-    }
-  } catch (error) {
-    console.error("❌ Error updating payment out:", error);
-
-    setAlertConfig({
-      visibility: true,
-      message: "Error updating payment. Please try again.",
-      type: "error",
-      noReload: true,
-    });
-
-    setTimeout(() => {
-      setAlertConfig((prev) => ({
-        ...prev,
-        visibility: false,
-      }));
-    }, 3000);
-  }
-};
-
-
-  const handleDisbursementTypeChange = (event) => {
-    const { name, value } = event.target;
-    setDisbursementType(value);
-  };
-  const handleGroupAuctionChange = async (groupId) => {
-    if (groupId) {
-      try {
-        const response = await api.post(
-          `/enroll/get-user-tickets-report/${groupId}`
-        );
-        if (response.data && response.data.length > 0) {
-          const validAuctions = response.data.filter(
-            (auction) => auction.enrollment && auction.enrollment.group
-          );
-          setFilteredAuction(validAuctions);
-        } else {
-          setFilteredAuction([]);
-        }
-      } catch (error) {
-        console.error("Error fetching enrollment data:", error);
-        setFilteredAuction([]);
-      }
-    } else {
-      setFilteredAuction([]);
+      setDisabled(false);
+       window.location.reload();
     }
   };
+
+  const columns = [
+    { key: "id", header: "SL. NO" },
+    { key: "date", header: "Auction Date" },
+    { key: "name", header: "Customer Name" },
+    { key: "phone_number", header: "Customer Phone Number" },
+    { key: "ticket", header: "Ticket" },
+    { key: "bid_amount", header: "Bid Amount" },
+    { key: "amount", header: "Win Amount" },
+    { key: "auction_type", header: "Auction Type" },
+    { key: "status", header: "Status" },
+    { key: "action", header: "Action" },
+  ];
 
   return (
     <>
-      {openBackdropLoader ? (
-        <BackdropBlurLoader title={"payment Data processing...."} />
-      ) : (
-        <div>
-          <div className="flex mt-20">
-            <Navbar
-              onGlobalSearchChangeHandler={onGlobalSearchChangeHandler}
-              visibility={true}
-            />
-            <Sidebar />
-            <CustomAlert
-              type={alertConfig.type}
-              isVisible={alertConfig.visibility}
-              message={alertConfig.message}
-              noReload={alertConfig.noReload}
-            />
+      <div className="flex mt-20">
+        <Navbar
+          onGlobalSearchChangeHandler={onGlobalSearchChangeHandler}
+          visibility={true}
+        />
+        <Sidebar />
 
+        <CustomAlert
+          type={alertConfig.type}
+          isVisible={alertConfig.visibility}
+          message={alertConfig.message}
+        />
 
-{/* {alertConfig.visibility && (
-  <div
-    style={{
-      position: "fixed",
-      top: "80px",
-      left: "50%",
-      transform: "translateX(-50%)",
-      backgroundColor:
-        alertConfig.type === "success"
-          ? "#4CAF50"
-          : alertConfig.type === "error"
-          ? "#f44336"
-          : "#2196F3",
-      color: "#fff",
-      padding: "12px 24px",
-      borderRadius: "8px",
-      zIndex: 9999,
-    }}
-  >
-    {alertConfig.message}
-  </div>
-)} */}
+        <div className="flex-grow p-7">
+          <h1 className="text-2xl font-semibold">
+            <span className="font-bold text-red-600">CHIT</span> Payment Out
+          </h1>
 
-
-
-            <div className="flex-grow p-7">
-              <h1 className="text-2xl font-semibold">
-                <span className="text-2xl text-red-500 font-bold">
-                  {paymentType?.toUpperCase()}
-                </span>
-                {"  "}
-                Payments Out
-              </h1>
-              <div className="mt-6  mb-8">
-                <div className="mb-10">
-                  <label className="font-bold">Search or Select Group</label>
-                  <div className="flex justify-between items-center w-full">
-                    <Select
-                      placeholder="Today's Payment"
-                      popupMatchSelectWidth={false}
-                      showSearch
-                      className="w-full  h-14 max-w-md"
-                      filterOption={(input, option) =>
-                        option.children
-                          .toString()
-                          .toLowerCase()
-                          .includes(input.toLowerCase())
-                      }
-                      value={selectedAuctionGroupId || undefined}
-                      onChange={handleGroupPayment}
-                    >
-                      <Select.Option key={"#1"} value={"today"}>
-                        {"Today's Payments"}
-                      </Select.Option>
-                      {actualGroups.map((group) => (
-                        <Select.Option key={group._id} value={group._id}>
-                          {group.group_name}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                    <div>
-                      {/* <button
-                        onClick={() => setShowModal(true)}
-                        className="ml-4 bg-blue-950 text-white px-4 py-2 rounded shadow-md hover:bg-blue-800 transition duration-200"
-                      >
-                        +Add Payment Out
-                      </button> */}
-
-                      <button
-                        onClick={() => {
-                          setFormData({
-                            user_id: "",
-                            pay_date: today, // already defined earlier
-                            amount: "",
-                            pay_type: "cash",
-                            transaction_id: "",
-                            payment_group_tickets: [],
-                            disbursement_type: "Auction Winning Payout",
-                            note: "",
-                          });
-                          setDisbursementType("Auction Winning Payout");
-                          setSelectedGroupId("");
-                          setPaymentGroupTickets([]);
-                          setErrors({});
-                          setShowModal(true);
-                        }}
-                        className="ml-4 bg-blue-950 text-white px-4 py-2 rounded shadow-md hover:bg-blue-800 transition duration-200"
-                      >
-                        +Add Payment Out
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {TablePayments && TablePayments.length > 0 ? (
-                  <DataTable
-                    data={TablePayments.filter((item) =>
-                      Object.values(item).some((value) =>
-                        String(value)
-                          .toLowerCase()
-                          .includes(searchText.toLowerCase())
-                      )
-                    )}
-                    columns={columns}
-                    exportedFileName={`Payments ${
-                      TablePayments.length > 0
-                        ? TablePayments[0].date +
-                          " to " +
-                          TablePayments[TablePayments.length - 1].date
-                        : "empty"
-                    }.csv`}
-                  />
-                ) : (
-                  <div className="mt-10 text-center text-gray-500">
-                    <CircularLoader
-                      isLoading={isLoading}
-                      data="Payments Data"
-                      failure={
-                        TablePayments.length <= 0 && selectedAuctionGroupId
-                      }
-                    />
-                  </div>
-                )}
+          <div className="mt-6 mb-8">
+            <div className="mb-10">
+              <label>Select or Search Group</label>
+              <div className="flex justify-between items-center w-full">
+                <Select
+                  value={selectedAuctionGroupId || undefined}
+                  onChange={handleGroupAuction}
+                  popupMatchSelectWidth={false}
+                  showSearch
+                  className="w-full max-w-md"
+                  placeholder="Search or Select Group"
+                  filterOption={(input, option) =>
+                    option.children
+                      .toString()
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                >
+                  {groups.map((g) => (
+                    <Select.Option key={g._id} value={g._id}>
+                      {g.group_name}
+                    </Select.Option>
+                  ))}
+                </Select>
               </div>
+
+              {filteredAuction[0]?.group_id?.group_type && (
+                <p className="text-xl mt-5">Balance: {double.amount}</p>
+              )}
             </div>
 
-            <Modal
-              isVisible={showModal}
-              onClose={() => {
-                setSelectedGroupId("");
-                setShowModal(false);
-                setErrors({});
-                setPaymentGroupTickets([]);
-              }}
-            >
-              <div className="py-6 px-5 lg:px-8 text-left">
-                <h3 className="mb-4 text-xl font-bold text-gray-900">
-                  Add Payment Out
-                </h3>
-                {/* <form className="space-y-6" onSubmit={handleSubmit} noValidate> */}
-                <form
-                  className="space-y-6"
-                  onSubmit={(e) => {
-                    e.preventDefault(); // Keep this here
-                    if (isEditMode) {
-                      handleUpdate(e); // ✅ Pass the event object 'e' to handleUpdate
-                    } else {
-                      handleSubmit(e); // ✅ Also ensure handleSubmit receives 'e' if it's not already
-                    }
-                  }}
-                  noValidate
-                >
-                  <Drawer
-                    closable
-                    destroyOnHidden
-                    title={<p>Last Three Transactions</p>}
-                    placement="right"
-                    open={openAntDDrawer}
-                    loading={showLoader}
-                    onClose={() => setOpenAntDDrawer(false)}
-                  >
-                    {lastThreePayments?.length <= 0 ? (
-                      <div className="font-semibold text-center text-xl">
-                        No Transaction Found
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2 ">
-                        {lastThreePayments.map((payment, index) => {
-                          return (
-                            <section
-                              className="bg-white shadow-md rounded-lg p-4 space-y-2 border border-gray-200 "
-                              key={index}
-                            >
-                              <div className="text-gray-800 font-semibold">
-                                Payment Date:{" "}
-                                <span className="font-bold">
-                                  {payment?.pay_date}
-                                </span>
-                              </div>
-
-                              {payment.group_id && (
-                                <div className="text-gray-800 font-semibold">
-                                  Group:{" "}
-                                  <span className="font-bold">
-                                    {payment.group_id?.group_name}
-                                  </span>
-                                </div>
-                              )}
-                              {payment.ticket && (
-                                <div className="text-gray-800 font-semibold">
-                                  Ticket:{" "}
-                                  <span className="font-normal">
-                                    {payment?.ticket}
-                                  </span>
-                                </div>
-                              )}
-                              <div className="text-gray-800 font-semibold">
-                                PayOut Amount:{" "}
-                                <span className="font-bold">
-                                  ₹{payment?.amount}
-                                </span>
-                              </div>
-                              <div className="text-gray-800 font-semibold">
-                                Payment Type:{" "}
-                                <span className="font-normal">
-                                  {payment?.pay_type}
-                                </span>
-                              </div>
-                              <div className="text-gray-800 font-semibold">
-                                Name:{" "}
-                                <span className="font-normal">
-                                  {payment.user_id?.full_name}
-                                </span>
-                              </div>
-                            </section>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </Drawer>
-                  <div className="w-full">
-                    <label
-                      className="block mb-2 text-sm font-medium text-gray-900"
-                      htmlFor="category"
-                    >
-                      Customer <span className="text-red-500 ">*</span>
-                    </label>
-
-                    <Select
-                      className={`bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full ${fieldSize.height}`}
-                      placeholder="Select Or Search Customer"
-                      popupMatchSelectWidth={false}
-                      showSearch
-                      filterOption={(input, option) =>
-                        option.children
-                          .toString()
-                          .toLowerCase()
-                          .includes(input.toLowerCase())
-                      }
-                      value={selectedGroupId || undefined}
-                      onChange={handleCustomer}
-                    >
-                      {groups.map((group) => (
-                        <Select.Option key={group._id} value={group._id}>
-                          {`${group.full_name} | ${group.phone_number}`}
-                        </Select.Option>
-                      ))}
-                    </Select>
-
-                    {errors.customer && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.customer}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="w-full">
-                    <label
-                      className="block mb-2 text-sm font-medium text-gray-900"
-                      htmlFor="category"
-                    >
-                      Group & Ticket <span className="text-red-500 ">*</span>
-                    </label>
-                    <Select
-                      // mode="multiple"
-                      name="group_id"
-                      placeholder="Select Group | Ticket"
-                      onChange={handlePaymentAntSelect}
-                      value={paymentGroupTickets}
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg  w-full h-14"
-                    >
-                      {filteredAuction.map((entry, index) => {
-                        const groupName =
-                          entry?.enrollment?.group?.group_name ||
-                          "Unnamed Group";
-                        const groupId =
-                          entry?.enrollment?.group?._id || `missing-${index}`;
-                        const ticket = entry?.enrollment?.tickets || "Unknown";
-
-                        return (
-                          <Select.Option
-                            key={`chit-${groupId}|${ticket}`}
-                            value={`chit-${groupId}|${ticket}`}
-                          >
-                            {groupName} | {ticket}
-                          </Select.Option>
-                        );
-                      })}
-                    </Select>
-                    {errors.payment_group_tickets && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.payment_group_tickets}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-row justify-between space-x-4">
-                    <div className="w-full">
-                      <label
-                        className="block mb-2 text-sm font-medium text-gray-900"
-                        htmlFor="group_install"
-                      >
-                        Payment Date
-                      </label>
-                      <input
-                        disabled={!modifyPayment}
-                        type="date"
-                        name="pay_date"
-                        value={formData.pay_date}
-                        id="pay_date"
-                        onChange={handleChange}
-                        placeholder=""
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full h-14"
-                      />
-
-                      {errors.pay_date && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.pay_date}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-row justify-between space-x-4">
-                    <div className="w-1/2">
-                      <label
-                        className="block mb-2 text-sm font-medium text-gray-900"
-                        htmlFor="group_value"
-                      >
-                        Amount <span className="text-red-500 ">*</span>
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          name="amount"
-                          value={formData.amount}
-                          id="amount"
-                          onChange={handleChange}
-                          placeholder="Enter Amount"
-                          required
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
-                        />
-                        <Tooltip title="Last 3 Transactions">
-                          <button
-                            className="bg-green-300 rounded-md p-2 border-2 font-semibold"
-                            onClick={(e) => fetchLastThreeTransactions(e)}
-                          >
-                            <FaReceipt />
-                          </button>
-                        </Tooltip>
-                      </div>
-
-                      {errors.amount && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.amount}
-                        </p>
-                      )}
-                    </div>
-                    <div className="w-1/2">
-                      <label
-                        className="block mb-2 text-sm font-medium text-gray-900"
-                        htmlFor="pay_mode"
-                      >
-                        Payment Mode
-                      </label>
-                      <select
-                        name="pay_mode"
-                        id="pay_mode"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
-                        onChange={handlePaymentModeChange}
-                      >
-                        <option value="cash">Cash</option>
-                        <option value="online">Online</option>
-                        {modifyPayment && (
-                          <>
-                            <option value="suspense">Suspense</option>
-                            <option value="credit">Credit</option>
-                            <option value="adjustment">Adjustment</option>
-                            <option value="others">Others</option>
-                          </>
-                        )}
-                      </select>
-                    </div>
-                  </div>
-                  {formData.amount && paymentGroupTickets.length > 1 && (
-                    <div>
-                      <label
-                        className="block mb-2 text-sm font-medium text-gray-900"
-                        htmlFor="pay_mode"
-                      >
-                        Individual Ticket Amount
-                      </label>
-
-                      <input
-                        type="text"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg hover:cursor-not-allowed w-full p-2.5"
-                        placeholder="totalAmount"
-                        value={
-                          Number(formData.amount) / paymentGroupTickets.length
-                        }
-                        disabled
-                      />
-                    </div>
-                  )}
-                  {paymentMode === "online" && (
-                    <div className="w-full mt-4">
-                      <label
-                        className="block mb-2 text-sm font-medium text-gray-900"
-                        htmlFor="transaction_id"
-                      >
-                        Transaction ID <span className="text-red-500 ">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="transaction_id"
-                        id="transaction_id"
-                        value={formData.transaction_id}
-                        onChange={handleChange}
-                        placeholder="Enter Transaction ID"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
-                      />
-                      {errors.transaction_id && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.transaction_id}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  <div className="mb-4">
-                    <label className="block font-medium mb-1">
-                      Disbursement Type
-                    </label>
-                    <input
-                      type="text"
-                      name="disbursement_type"
-                      value={formData.disbursement_type}
-                      readOnly
-                      className="w-full h-12 border px-4 rounded bg-gray-100 text-gray-700 cursor-not-allowed"
-                    />
-                  </div>
-
-                  {showOthersField && (
-                    <>
-                      <div className="w-full">
-                        <label
-                          className="block mb-2 text-sm font-medium text-gray-900"
-                          htmlFor="othersField"
-                        >
-                          Others
-                        </label>
-                        <input
-                          type="text"
-                          className=" border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5"
-                          id="othersField"
-                          name="disbursement_type"
-                          value={disbursementType}
-                          placeholder="Specify if your option is not listed above"
-                          onChange={handleDisbursementTypeChange}
-                        />
-                      </div>
-                      {errors.disbursement_type && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.disbursement_type}
-                        </p>
-                      )}
-                    </>
-                  )}
-                  <div className="w-full">
-                    <label
-                      className="block mb-2 text-sm font-medium text-gray-900"
-                      htmlFor="note"
-                    >
-                      Note
-                    </label>
-                    <textarea
-                      rows={2}
-                      type="text"
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                      id="note"
-                      name="note"
-                      value={formData.note}
-                      placeholder="Note if any?"
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <div className="w-full bg-blue-50 p-3 rounded-lg">
-                      <label className="block mb-1 text-sm font-medium text-gray-900">
-                        Disbursed By
-                      </label>
-                      <div className="font-semibold">{adminName}</div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center p-4 max-w-full bg-white rounded-lg shadow-sm space-y-4">
-                    <div className="flex items-center space-x-1">
-                      <FaWhatsappSquare color="green" className="w-8 h-8" />
-                      <h2 className="text-md font-semibold text-gray-800">
-                        WhatsApp
-                      </h2>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={whatsappEnable}
-                        className="text-green-500 checked:ring-2  checked:ring-green-700 rounded-full w-4 h-4"
-                      />
-                      <span className="text-gray-700 text-sm">
-                        Send Via Whatsapp
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowModal(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
-                    >
-                      Cancel
-                    </button>
-                    <Tooltip title="Saving Payment Out">
-                      <button
-                        type="submit"
-                        className="w-1/4 text-white bg-blue-700 hover:bg-blue-800 border-2 border-black
-                              focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
-                      >
-                      {isEditMode ? "Update Payment Out" : "Save Payment Out"}
-                      </button>
-                    </Tooltip>
-                  </div>
-                </form>
-              </div>
-            </Modal>
+            <div>
+              {TableAuctions.length ? (
+                <DataTable
+                  updateHandler={handleUpdateModalOpen}
+                  data={filterOption(TableAuctions, searchText)}
+                  columns={columns}
+                  exportedFileName={`Auctions ${
+                    TableAuctions.length > 1
+                      ? TableAuctions[1].date +
+                        " to " +
+                        TableAuctions[TableAuctions.length - 1].date
+                      : "empty"
+                  }.csv`}
+                />
+              ) : (
+                <CircularLoader
+                  isLoading={isLoading}
+                  data="Auction Data"
+                  failure={
+                    TableAuctions.length === 0 && !!selectedAuctionGroupId
+                  }
+                />
+              )}
+            </div>
           </div>
         </div>
-      )}
-   
 
-      <Modal
-        isVisible={showModalDelete}
-        onClose={() => {
-          setShowModalDelete(false);
-          setCurrentGroup(null);
-        }}
-      >
-        <div className="py-6 px-5 text-left">
-          <h3 className="mb-4 text-xl font-bold text-gray-900">
-            Are you sure you want to delete?
-          </h3>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleDeleteAuction();
-            }}
-          >
-            <button
-              type="submit"
-              className="w-full text-white bg-red-700 hover:bg-red-800 font-medium rounded-lg text-sm px-5 py-2.5"
-            >
-              Delete
-            </button>
-          </form>
-        </div>
-      </Modal>
+        <Modal
+          open={showPaymentModal}
+          title="Payment Out"
+          okText="Submit"
+          onCancel={() => setShowPaymentModal(false)}
+          onOk={handleSubmit}
+        >
+          {paymentDetails ? (
+            <form className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium">
+                  Customer Name
+                </label>
+                <input
+                  value={paymentDetails.customerName}
+                  readOnly
+                  className="border bg-gray-200 rounded w-full p-2 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Group Name</label>
+                <input
+                  value={paymentDetails.groupName}
+                  readOnly
+                  className="border bg-gray-200 rounded w-full p-2 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Ticket</label>
+                <input
+                  name="ticket"
+                  value={formData.ticket}
+                  readOnly
+                  className="bg-gray-200 border rounded w-full p-2 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Win Amount</label>
+                <input
+                  type="number"
+                  value={paymentDetails.winAmount}
+                  onChange={(e) =>
+                    setPaymentDetails((p) => ({
+                      ...p,
+                      winAmount: e.target.value,
+                    }))
+                  }
+                  className="border bg-gray-200 rounded w-full p-2 cursor-not-allowed"
+                  readOnly
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">
+                  Disbursement Type
+                </label>
+                <input
+                  name="disbursement_type"
+                  value={formData.disbursement_type}
+                  readOnly
+                  className="bg-gray-200 border rounded w-full p-2 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">
+                  Payment Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.pay_date}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, pay_date: e.target.value }))
+                  }
+                  className="border rounded w-full p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">
+                  Payment Mode
+                </label>
+                <select
+                  name="pay_mode"
+                  value={paymentMode}
+                  onChange={handlePaymentModeChange}
+                  className="border rounded w-full p-2"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="online">Online</option>
+                  {modifyPayment && (
+                    <>
+                      <option value="suspense">Suspense</option>
+                      <option value="credit">Credit</option>
+                      <option value="adjustment">Adjustment</option>
+                      <option value="others">Others</option>
+                    </>
+                  )}
+                </select>
+              </div>
+              {paymentMode === "online" && (
+                <div>
+                  <label className="block text-sm font-medium">
+                    Transaction ID *
+                  </label>
+                  <input
+                    type="text"
+                    name="transaction_id"
+                    value={formData.transaction_id}
+                    onChange={handleChange}
+                    className="border rounded w-full p-2"
+                  />
+                  {errors.transaction_id && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.transaction_id}
+                    </p>
+                  )}
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium">Note</label>
+                <textarea
+                  value={paymentDetails.note || ""}
+                  onChange={(e) =>
+                    setPaymentDetails((p) => ({ ...p, note: e.target.value }))
+                  }
+                  className="border rounded w-full p-2"
+                  rows={2}
+                />
+              </div>
+            </form>
+          ) : (
+            <p>Loading payment details…</p>
+          )}
+        </Modal>
 
-      {/* ✅ Edit Modal */}
-      <Modal
-        isVisible={showUpdateModal}
-        onClose={() => {
-          setShowUpdateModal(false);
-          setCurrentUpdateAmount(null);
-        }}
-      >
-        <div className="py-6 px-5 text-left">
-          <h3 className="mb-4 text-xl font-bold text-gray-900">
-            Edit Payment Out
-          </h3>
-          <form onSubmit={handleUpdate} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Amount
-              </label>
-              <input
-                type="number"
-                value={updateFormData.amount}
-                onChange={(e) =>
-                  setUpdateFormData({
-                    ...updateFormData,
-                    amount: e.target.value,
-                  })
-                }
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring focus:ring-indigo-200 focus:border-indigo-300 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Pay Date
-              </label>
-              <input
-                type="date"
-                value={updateFormData.pay_date}
-                onChange={(e) =>
-                  setUpdateFormData({
-                    ...updateFormData,
-                    pay_date: e.target.value,
-                  })
-                }
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring focus:ring-indigo-200 focus:border-indigo-300 sm:text-sm"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md"
-            >
-              Update
-            </button>
-          </form>
-        </div>
-      </Modal>
+        <Modal
+          open={showModalUpdate}
+          footer={null}
+          onCancel={() => setShowModalUpdate(false)}
+        >
+          <div className="py-6 px-5 lg:px-8 text-left">
+            <h3 className="mb-4 text-xl font-bold">View Auction</h3>
+            <form className="space-y-6">
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">SI No</label>
+                  <input
+                    value={currentUpdateGroup?.SI_number}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">Group *</label>
+                  <input
+                    value={currentUpdateGroup?.group_id?.group_name}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">Group Value</label>
+                  <input
+                    value={currentUpdateGroup?.group_id?.group_value}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">
+                    Group Installment
+                  </label>
+                  <input
+                    value={currentUpdateGroup?.group_id?.group_install}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+              </div>
+              {currentUpdateGroup?.group_id?.group_type === "double" && (
+                <div>
+                  <label className="block mb-2 text-sm">Auction Type</label>
+                  <input
+                    value={
+                      currentUpdateGroup?.auction_type.charAt(0).toUpperCase() +
+                      currentUpdateGroup?.auction_type.slice(1) +
+                      " Auction"
+                    }
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block mb-2 text-sm">Customer *</label>
+                <input
+                  value={`${currentUpdateGroup?.user_id?.full_name} | ${currentUpdateGroup?.ticket}`}
+                  readOnly
+                  className="bg-gray-50 border rounded w-full p-2"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-sm">Bid Amount *</label>
+                <input
+                  value={
+                    currentUpdateGroup?.group_id?.group_value -
+                    currentUpdateGroup?.win_amount
+                  }
+                  readOnly
+                  className="bg-gray-50 border rounded w-full p-2"
+                />
+              </div>
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">Commission</label>
+                  <input
+                    value={currentUpdateGroup?.commission}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">Winning Amount</label>
+                  <input
+                    value={currentUpdateGroup?.win_amount}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">Divident</label>
+                  <input
+                    value={currentUpdateGroup?.divident}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">
+                    Divident per Head
+                  </label>
+                  <input
+                    value={currentUpdateGroup?.divident_head}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">Next Payable</label>
+                  <input
+                    value={currentUpdateGroup?.payable}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">Auction Date *</label>
+                  <input
+                    type="date"
+                    value={currentUpdateGroup?.auction_date}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+                <div className="w-1/2">
+                  <label className="block mb-2 text-sm">Next Date *</label>
+                  <input
+                    type="date"
+                    value={currentUpdateGroup?.next_date}
+                    readOnly
+                    className="bg-gray-50 border rounded w-full p-2"
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+        </Modal>
+      </div>
     </>
   );
 };
