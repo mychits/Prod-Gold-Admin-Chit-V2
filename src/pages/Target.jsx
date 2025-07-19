@@ -346,14 +346,15 @@ const Target = () => {
     if (currentType !== "designation") {
       try {
         const { data: commData } = await api.get(
-          `/enroll/get-detailed-commission/${person._id}`,
+          '/enroll/get-detailed-commission-per-month',
           {
             params: {
+              agent_id: person._id,
               from_date: fromDate,
               to_date: toDate,
             },
           }
-        );
+        );  
         achieved = commData?.summary?.actual_business || 0;
         if (typeof achieved === "string") {
           achieved = Number(achieved.replace(/[^0-9.-]+/g, ""));
