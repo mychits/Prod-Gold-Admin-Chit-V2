@@ -1,0 +1,970 @@
+/* eslint-disable no-unused-vars */
+import { useEffect, useState, useMemo } from "react";
+import Sidebar from "../components/layouts/Sidebar";
+import Modal from "../components/modals/Modal";
+import { FaWhatsapp } from "react-icons/fa";
+import api from "../instance/TokenInstance";
+import DataTable from "../components/layouts/Datatable";
+import CustomAlertDialog from "../components/alerts/CustomAlertDialog";
+import whatsappApi from "../instance/WhatsappInstance";
+import CircularLoader from "../components/loaders/CircularLoader";
+
+const WhatsappPromo = () => {
+  const [TableUsers, setTableUsers] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+
+  const [whatsappData, setWhatsappData] = useState([]);
+  const [disabled, setDisabled] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    visibility: false,
+    message: "Something went wrong!",
+    type: "info",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectUser, setSelectUser] = useState({});
+  const [customerCount, setCustomerCount] = useState(0);
+  const [selectAll, setSelectAll] = useState({ msg: "All", checked: false });
+  const [formData, setFormData] = useState({
+    template_name: "",
+  });
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+  const [errors, setErrors] = useState({});
+  const [userType, setUserType] = useState("customer"); // State for dynamic header title
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [selectedReferrerName, setSelectedReferrerName] = useState("");
+  const [selectedReferrerType, setSelectedReferrerType] = useState("employee"); // Initial filter type
+  const [agentList, setAgentList] = useState([]);
+  const [leadList, setLeadList] = useState([]);
+  const [customerList, setCustomerList] = useState([]);
+  const [leadsMap, setLeadsMap] = useState({});
+  const [groupNameFilter, setGroupNameFilter] = useState("");
+  const [groupList, setGroupList] = useState([]);
+  const [selectedGroupName, setSelectedGroupName] = useState("");
+  // Effect to update the header title based on selectedReferrerType
+  useEffect(() => {
+    const typeMap = {
+      customer: "Customers",
+      agent: "Agents",
+      employee: "Employees",
+      lead: "Leads",
+    };
+    setUserType(typeMap[selectedReferrerType] || "Users"); // Default to "Users"
+  }, [selectedReferrerType]);
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const res = await api.get("/lead/get-lead");
+        const data = Array.isArray(res.data) ? res.data : res.data?.leads || [];
+        const map = {};
+        for (const lead of data) {
+          let lead_type_name = "";
+          if (lead.lead_type === "customer") {
+            lead_type_name = lead?.lead_customer?.full_name;
+          } else if (lead.lead_type === "agent") {
+            lead_type_name = lead?.lead_agent?.name;
+          }
+          map[lead._id] = lead_type_name?.toLowerCase();
+        }
+        setLeadsMap(map);
+      } catch (err) {
+        console.error("Failed to fetch leads", err);
+      }
+    };
+
+    fetchLeads();
+  }, []);
+  useEffect(() => {
+    const fetchReferrers = async () => {
+      try {
+        if (selectedReferrerType === "agent") {
+          const res = await api.get("/agent/get");
+          const allAgents = Array.isArray(res.data)
+            ? res.data
+            : res.data.agent || [];
+          const filtered = allAgents.filter((a) => a.agent_type === "agent");
+          setAgentList(filtered);
+        } else if (selectedReferrerType === "employee") {
+          const res = await api.get("/agent/get-employee");
+          const employees = Array.isArray(res.data.employee)
+            ? res.data.employee
+            : [];
+          setAgentList(employees);
+        } else if (selectedReferrerType === "lead") {
+          const res = await api.get("/lead/get-lead");
+          setLeadList(
+            Array.isArray(res.data) ? res.data : res.data.leads || []
+          );
+        } else if (selectedReferrerType === "customer") {
+          const res = await api.get("/user/get-user");
+          setCustomerList(
+            Array.isArray(res.data) ? res.data : res.data.users || []
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching referrer list:", err);
+      }
+    };
+
+    fetchReferrers();
+  }, [selectedReferrerType]);
+
+  const filteredUsers = useMemo(() => {
+    const filtered = TableUsers.filter((u) => {
+      const enrollmentDate = new Date(u.createdAt || u.enrollmentDate);
+      const matchFrom = fromDate ? enrollmentDate >= new Date(fromDate) : true;
+      const matchTo = toDate
+        ? enrollmentDate <= new Date(toDate + "T23:59:59")
+        : true;
+      return matchFrom && matchTo;
+    });
+
+    return filtered.map((user, index) => {
+      const isSelected = !!selectUser[user._id];
+
+      return {
+        ...user,
+        sl_no: index + 1,
+        checkBoxs: (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => {
+              setSelectUser((prev) => ({
+                ...prev,
+                [user._id]: e.target.checked,
+              }));
+            }}
+          />
+        ),
+        isSelected,
+      };
+    });
+  }, [TableUsers, fromDate, toDate, selectUser]);
+
+  const visibleSelectedCount = useMemo(() => {
+    return filteredUsers.filter((user) => user.isSelected).length;
+  }, [filteredUsers]);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const res = await api.get("/group/get-group");
+        const groups = Array.isArray(res.data)
+          ? res.data
+          : res.data?.groups || [];
+        setGroupList(groups);
+      } catch (err) {
+        console.error("Failed to fetch groups:", err);
+      }
+    };
+
+    fetchGroups();
+  }, []);
+const sendWhatsapp = async () => {
+  // ✅ Construct payload with 'receivers' object as backend expects
+  const payload = {
+    receivers: {},
+  };
+
+  whatsappData.forEach((user, index) => {
+    payload.receivers[`user${index}`] = user;
+  });
+
+  // ✅ Check if there is at least one selected user
+  if (Object.keys(payload.receivers).length === 0) {
+    setAlertConfig({
+      type: "warning",
+      message: "Please select at least one user to send WhatsApp message.",
+      visibility: true,
+    });
+    return;
+  }
+
+  try {
+    const res = await api.post("/whatsapp/whatsapp-promo-message", payload);
+
+    setAlertConfig({
+      type: "success",
+      message: `Messages sent! Success: ${res.data.successCount}, Failed: ${res.data.errorCount}`,
+      visibility: true,
+    });
+
+    // ✅ Reset selection after sending
+    const updatedSelection = { ...selectUser };
+    whatsappData.forEach((entry) => {
+      updatedSelection[entry.info.userId] = false;
+    });
+    setSelectUser(updatedSelection);
+    setWhatsappData([]);
+  } catch (err) {
+    console.error("WhatsApp Error:", err);
+    setAlertConfig({
+      type: "error",
+      message: "Failed to send WhatsApp messages.",
+      visibility: true,
+    });
+  }
+};
+
+
+  // useEffect(() => {
+  //   const fetchUsers = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       const response = await api.get(`/enroll-report/get-enroll-report`);
+  //       if (!response.data) {
+  //         setIsLoading(false);
+  //         return;
+  //       }
+
+  //       const filtered = response.data.filter((group) => {
+  //         const created = group?.createdAt ? new Date(group.createdAt) : null;
+  //         const from = fromDate ? new Date(fromDate) : null;
+  //         let to = toDate ? new Date(toDate) : null;
+  //         if (to) to.setHours(23, 59, 59, 999);
+
+  //         const isWithinDateRange =
+  //           (!from || (created && created >= from)) &&
+  //           (!to || (created && created <= to));
+
+  //         const normalizedReferrerName = selectedReferrerName
+  //           .trim()
+  //           .toLowerCase();
+
+  //         let matchesAgent = false;
+  //         if (selectedReferrerType === "agent") {
+  //           const agentName = group?.agent?.name?.toLowerCase();
+  //           const agentType = group?.agent?.agent_type;
+  //           matchesAgent =
+  //             agentType === "agent" &&
+  //             agentName &&
+  //             agentName.includes(normalizedReferrerName);
+  //         }
+
+  //         let matchesEmployee = false;
+  //         if (selectedReferrerType === "employee") {
+  //           const employeeName = group?.agent?.name?.toLowerCase();
+  //           const employeeType = group?.agent?.agent_type;
+  //           matchesEmployee =
+  //             employeeType === "employee" &&
+  //             employeeName &&
+  //             employeeName.includes(normalizedReferrerName);
+  //         }
+
+  //         let matchesLead = false;
+  //         if (selectedReferrerType === "lead") {
+  //           const referredLeadId = group?.referred_lead?._id;
+  //           const leadName = leadsMap[referredLeadId];
+  //           matchesLead = leadName && leadName.includes(normalizedReferrerName);
+  //         }
+
+  //         let matchesCustomer = false;
+  //         if (selectedReferrerType === "customer") {
+  //           const customerName =
+  //             group?.referred_customer?.full_name?.toLowerCase();
+  //           matchesCustomer =
+  //             customerName && customerName.includes(normalizedReferrerName);
+  //         }
+
+  //         const typeMatch =
+  //           matchesAgent || matchesEmployee || matchesLead || matchesCustomer;
+
+  //         return typeMatch && isWithinDateRange;
+  //       });
+
+  //       const formatted = filtered
+  //         .map((group, index) => {
+  //           const id = group?._id;
+  //           if (!id) return null;
+
+  //           return {
+  //             _id: id,
+  //             id: index + 1,
+  //             full_name: group?.user_id?.full_name || "NA",
+  //             phone_number: group?.user_id?.phone_number || "NA",
+  //             group_name: group?.group_id?.group_name || "NA",
+  //             action: (
+  //               <label
+  //                 key={id}
+  //                 className="cursor-pointer flex justify-center items-center"
+  //               >
+  //                 <input
+  //                   type="checkbox"
+  //                   checked={selectUser[id]}
+  //                   onChange={(e) => {
+  //                     setSelectUser((prev) => ({
+  //                       ...prev,
+  //                       [id]: e.target.checked,
+  //                     }));
+  //                   }}
+  //                 />
+  //                 {/* <div
+  //                   className={`w-5 h-5 border-2 rounded-full transition-all duration-200
+  //       ${
+  //         selectUser[id]
+  //           ? "bg-green-500 border-green-600"
+  //           : "bg-white border-gray-300"
+  //       }`}
+  //                 ></div> */}
+  //               </label>
+  //             ),
+  //           };
+  //         })
+  //         .filter(Boolean);
+
+  //       // Merge existing selections for persistence
+  //       const newSelection = {};
+  //       formatted.forEach((u) => {
+  //         newSelection[u._id] = false; // deselect all by default on reload
+  //       });
+  //       setSelectUser(newSelection);
+
+  //       setTableUsers(formatted);
+  //     } catch (error) {
+  //       console.error("Error fetching Enrollment data:", error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+
+  //   fetchUsers();
+  // }, [selectedReferrerName, selectedReferrerType, fromDate, toDate]);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      try {
+        // Handle Lead separately
+        // if (selectedReferrerType === "lead") {
+        //   const response = await api.get("/lead/get-lead");
+        //   const leads = Array.isArray(response.data)
+        //     ? response.data
+        //     : response.data?.leads || [];
+
+        //   const filtered = leads.filter((lead) => {
+        //     const created = lead?.createdAt ? new Date(lead.createdAt) : null;
+        //     const from = fromDate ? new Date(fromDate) : null;
+        //     let to = toDate ? new Date(toDate) : null;
+        //     if (to) to.setHours(23, 59, 59, 999);
+
+        //     const isWithinDateRange =
+        //       (!from || (created && created >= from)) &&
+        //       (!to || (created && created <= to));
+
+        //     const lead_type_name =
+        //       lead.lead_type === "customer"
+        //         ? lead?.lead_customer?.full_name
+        //         : lead.lead_type === "agent"
+        //         ? lead?.lead_agent?.name
+        //         : "";
+
+        //     const normalizedLeadName = lead_type_name?.toLowerCase();
+        //     const normalizedReferrerName = selectedReferrerName
+        //       .trim()
+        //       .toLowerCase();
+
+        //     const nameMatches =
+        //       normalizedLeadName ||
+        //       normalizedLeadName.includes(normalizedReferrerName);
+        //     const groupName = lead?.group_id?.group_name?.toLowerCase() || "";
+        //     const matchesGroup =
+        //       !selectedGroupName ||
+        //       groupName === selectedGroupName.trim().toLowerCase();
+
+        //     return isWithinDateRange && nameMatches && matchesGroup;
+        //     //return isWithinDateRange && nameMatches;
+        //   });
+
+        //   const formatted = filtered.map((lead, index) => ({
+        //     _id: lead._id,
+        //     id: index + 1,
+        //     full_name: lead?.lead_name || "NA",
+        //     phone_number: lead?.lead_phone || "NA",
+        //     group_name: lead?.group_id?.group_name || "NA",
+        //     enrollment_date: group?.user_id?.createdAt
+        //       ? new Date(group.user_id.createdAt).toISOString().split("T")[0]
+        //       : "NA",
+        //     action: (
+        //       <label
+        //         key={lead._id}
+        //         className="cursor-pointer flex justify-center items-center"
+        //       >
+        //         <input
+        //           type="checkbox"
+        //           checked={selectUser[lead._id] || false}
+        //           onChange={(e) => {
+        //             setSelectUser((prev) => ({
+        //               ...prev,
+        //               [lead._id]: e.target.checked,
+        //             }));
+        //           }}
+        //         />
+        //       </label>
+        //     ),
+        //   }));
+
+        //   const newSelection = {};
+        //   formatted.forEach((u) => {
+        //     newSelection[u._id] = false;
+        //   });
+        //   setSelectUser(newSelection);
+        //   setTableUsers(formatted);
+        //   return;
+        // }
+        if (selectedReferrerType === "lead") {
+          const response = await api.get("/lead/get-lead");
+          const leads = Array.isArray(response.data)
+            ? response.data
+            : response.data?.leads || [];
+
+          const filtered = leads.filter((lead) => {
+            const created = lead?.createdAt ? new Date(lead.createdAt) : null;
+            const from = fromDate ? new Date(fromDate) : null;
+            let to = toDate ? new Date(toDate) : null;
+            if (to) to.setHours(23, 59, 59, 999);
+
+            const isWithinDateRange =
+              (!from || (created && created >= from)) &&
+              (!to || (created && created <= to));
+
+            const lead_type_name =
+              lead.lead_type === "customer"
+                ? lead?.lead_customer?.full_name
+                : lead.lead_type === "agent"
+                ? lead?.lead_agent?.name
+                : "";
+
+            const normalizedLeadName = lead_type_name?.toLowerCase() || "";
+            const normalizedReferrerName = selectedReferrerName
+              .trim()
+              .toLowerCase();
+
+            // ✅ Name filter: match if referrer is empty or matches
+            const nameMatches =
+              !normalizedReferrerName ||
+              normalizedLeadName.includes(normalizedReferrerName);
+
+            // ✅ Group filter
+            const groupName = lead?.group_id?.group_name?.toLowerCase() || "";
+            const matchesGroup =
+              !selectedGroupName ||
+              groupName === selectedGroupName.trim().toLowerCase();
+
+            return isWithinDateRange && nameMatches && matchesGroup;
+          });
+
+          const formatted = filtered.map((lead, index) => ({
+            _id: lead._id,
+            id: index + 1,
+            full_name: lead?.lead_name || "NA",
+            phone_number: lead?.lead_phone || "NA",
+            group_name: lead?.group_id?.group_name || "NA",
+            enrollment_date: lead?.createdAt
+              ? new Date(lead.createdAt).toISOString().split("T")[0]
+              : "NA",
+            action: (
+              <label
+                key={lead._id}
+                className="cursor-pointer flex justify-center items-center"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectUser[lead._id] || false}
+                  onChange={(e) => handleCheckboxChange(e.target.checked, lead)}
+                />
+              </label>
+            ),
+          }));
+
+          const newSelection = {};
+          formatted.forEach((u) => {
+            newSelection[u._id] = false;
+          });
+          setSelectUser(newSelection);
+          setTableUsers(formatted);
+          return;
+        }
+
+        // All other types: enroll-report
+        const response = await api.get(`/enroll-report/get-enroll-report`);
+        if (!response.data) {
+          setIsLoading(false);
+          return;
+        }
+
+        const filtered = response.data.filter((group) => {
+          const createdDateStr = group?.createdAt
+            ? new Date(group.createdAt).toISOString().split("T")[0]
+            : null;
+          const fromDateStr = fromDate || null;
+          const toDateStr = toDate || null;
+
+          const isWithinDateRange =
+            (!fromDateStr ||
+              (createdDateStr && createdDateStr >= fromDateStr)) &&
+            (!toDateStr || (createdDateStr && createdDateStr <= toDateStr));
+
+          const normalizedReferrerName = selectedReferrerName
+            .trim()
+            .toLowerCase();
+
+          let matchesAgent = false;
+          if (selectedReferrerType === "agent") {
+            const agentName = group?.agent?.name?.toLowerCase();
+            const agentType = group?.agent?.agent_type;
+            matchesAgent =
+              agentType === "agent" &&
+              agentName &&
+              agentName.includes(normalizedReferrerName);
+          }
+
+          let matchesEmployee = false;
+          if (selectedReferrerType === "employee") {
+            const employeeName = group?.agent?.name?.toLowerCase();
+            const employeeType = group?.agent?.agent_type;
+            matchesEmployee =
+              employeeType === "employee" &&
+              employeeName &&
+              employeeName.includes(normalizedReferrerName);
+          }
+
+          let matchesCustomer = false;
+          if (selectedReferrerType === "customer") {
+            const customerName =
+              group?.referred_customer?.full_name?.toLowerCase();
+            matchesCustomer =
+              customerName && customerName.includes(normalizedReferrerName);
+          }
+
+          const typeMatch =
+            selectedReferrerType === "" ||
+            matchesAgent ||
+            matchesEmployee ||
+            matchesCustomer;
+
+          const groupName = group?.group_id?.group_name?.toLowerCase() || "";
+          const matchesGroup =
+            !selectedGroupName ||
+            groupName === selectedGroupName.trim().toLowerCase();
+
+          return typeMatch && isWithinDateRange && matchesGroup;
+
+          // return typeMatch && isWithinDateRange;
+        });
+
+        const formatted = filtered
+          .map((group, index) => ({
+            _id: group._id,
+            id: index + 1,
+            full_name: group?.user_id?.full_name || "NA",
+            phone_number: group?.user_id?.phone_number || "NA",
+            group_name: group?.group_id?.group_name || "NA",
+            enrollment_date: group?.user_id?.createdAt
+              ? new Date(group.user_id.createdAt).toISOString().split("T")[0]
+              : "NA",
+            action: (
+              <label
+                key={group._id}
+                className="cursor-pointer flex justify-center items-center"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectUser[group._id] || false}
+                  onChange={(e) =>
+                    handleCheckboxChange(e.target.checked, group)
+                  }
+                />
+              </label>
+            ),
+          }))
+          .filter(Boolean);
+
+        const newSelection = {};
+        formatted.forEach((u) => {
+          newSelection[u._id] = false;
+        });
+        setSelectUser(newSelection);
+        setTableUsers(formatted);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [
+    selectedReferrerName,
+    selectedReferrerType,
+    fromDate,
+    toDate,
+    selectedGroupName,
+  ]);
+
+  useEffect(() => {
+    const selectedIds = Object.values(selectUser).filter((v) => v).length;
+    const total = TableUsers.length;
+
+    setCustomerCount(selectedIds);
+    setSelectAll((prev) => ({
+      ...prev,
+      checked: selectedIds === total && total > 0,
+      msg: selectedIds === total && total > 0 ? "No" : "All",
+    }));
+  }, [selectUser, TableUsers]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.template_name.trim()) {
+      newErrors.template_name = "Template name is required";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleCheckboxChange = (checked, user) => {
+    setSelectUser((prev) => ({
+      ...prev,
+      [user._id]: checked,
+    }));
+
+    const userData = {
+      info: {
+        userId: user._id,
+        userName: user.full_name || user.lead_name,
+        userPhone: user.phone_number || user.lead_phone,
+        groupName: user.group_name,
+        groupId: user.group_id?._id || user.group_id || "NA",
+      },
+    };
+
+    setWhatsappData((prev) => {
+      if (checked) {
+        return [...prev, userData];
+      } else {
+        return prev.filter((entry) => entry.info.userId !== user._id);
+      }
+    });
+  };
+
+const handleSelectAll = (checked) => {
+  const newSelection = {};
+  const newWhatsappData = [];
+
+  TableUsers.forEach((user) => {
+    newSelection[user._id] = checked;
+    if (checked) {
+      newWhatsappData.push({
+        info: {
+          userId: user._id, // ✅
+          userName: user.full_name || user.lead_name, // ✅
+          userPhone: user.phone_number || user.lead_phone, // ✅
+          groupName: user.group_name,
+          groupId: user.group_id?._id || user.group_id || "NA", // ✅
+        },
+      });
+    }
+  });
+
+  setSelectUser(newSelection);
+  setWhatsappData(newWhatsappData);
+};
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const isValid = validateForm();
+    try {
+      if (isValid) {
+        setDisabled(true);
+        const response = await whatsappApi.post("/marketing", {
+          selectUser,
+          template_name: formData?.template_name,
+        });
+        if (response.status >= 400) {
+          setShowModal(false);
+          setDisabled(false);
+          setErrors({});
+          setFormData({
+            template_name: "",
+          });
+
+          setAlertConfig({
+            type: "error",
+            message: "Whatsapp Failure",
+            visibility: true,
+          });
+        }
+        if (response.status === 201) {
+          setShowModal(false);
+          setErrors({});
+          setFormData({
+            template_name: "",
+          });
+          setReloadTrigger((prev) => prev + 1);
+          setAlertConfig({
+            type: "success",
+            message: "Whatsapped Successfully",
+            visibility: true,
+          });
+        }
+
+        setShowModal(false);
+        setErrors({});
+        setFormData({
+          template_name: "",
+        });
+      }
+    } catch (err) {
+      setAlertConfig({
+        type: "error",
+        message: "Whatsapp Failure",
+        visibility: true,
+      });
+      setDisabled(false);
+      console.error("whatsapp error", err.message);
+    }
+  };
+
+  useEffect(() => {
+    const countCustomer = () => {
+      let counter = 0;
+      Object.values(selectUser).forEach((ele) => {
+        if (ele) {
+          counter++;
+        }
+      });
+      setCustomerCount(counter);
+    };
+    countCustomer();
+  }, [selectUser, reloadTrigger]);
+
+  const columns = [
+    { key: "action", header: "Select" },
+    { key: "id", header: "SL. NO" },
+    { key: "enrollment_date", header: "Enrolled On" },
+    { key: "full_name", header: "Name" },
+    { key: "phone_number", header: "Phone Number" },
+    { key: "group_name", header: "Group Name" },
+  ];
+
+  return (
+    <>
+      <div className="w-screen">
+        <div className="flex mt-20">
+          <CustomAlertDialog
+            type={alertConfig.type}
+            isVisible={alertConfig.visibility}
+            message={alertConfig.message}
+            onClose={() =>
+              setAlertConfig((prev) => ({ ...prev, visibility: false }))
+            }
+          />
+
+          <div className="flex-grow p-1">
+            <div className="mt-2 mb-2">
+              <div className="flex justify-between items-center w-full">
+                <div className="flex flex-col">
+                  <div className="flex">
+                    <FaWhatsapp color="green" size="30" className="m-2" />
+                    <h1 className="text-2xl font-semibold flex items-center">
+                      Whatsapp {userType}
+                    </h1>
+                  </div>
+
+                  <div className="flex items-center my-2 cursor-pointer select-none"></div>
+                  <div className="flex flex-wrap items-center gap-4 my-4">
+                    <select
+                      className="border rounded px-8 py-2 text-sm"
+                      value={selectedReferrerType}
+                      onChange={(e) => setSelectedReferrerType(e.target.value)}
+                    >
+                      <option value="">All</option>
+                      <option value="agent">Agent</option>
+                      <option value="lead">Lead</option>
+                      <option value="customer">Customer</option>
+                      <option value="employee">Employee</option>
+                    </select>
+
+                    <select
+                      className="border p-2 px-10 rounded text-sm min-w-[200px]"
+                      value={selectedReferrerName}
+                      onChange={(e) => setSelectedReferrerName(e.target.value)}
+                    >
+                      <option value="">Select Referred By</option>
+
+                      {selectedReferrerType === "agent" &&
+                        agentList.map((agent) => (
+                          <option key={agent._id} value={agent.name}>
+                            {agent.name} ({agent.phone_number})
+                          </option>
+                        ))}
+
+                      {selectedReferrerType === "employee" &&
+                        agentList.map((agent) => (
+                          <option key={agent._id} value={agent.name}>
+                            {agent.name} ({agent.phone_number})
+                          </option>
+                        ))}
+
+                      {selectedReferrerType === "lead" &&
+                        leadList.map((lead) => {
+                          const lead_type_name =
+                            lead?.lead_type === "customer"
+                              ? lead?.lead_customer?.full_name
+                              : lead?.lead_type === "agent"
+                              ? lead?.lead_agent?.name
+                              : "";
+
+                          return (
+                            <option key={lead._id} value={lead_type_name}>
+                              {lead_type_name} ({lead?.lead_phone || "NA"})
+                            </option>
+                          );
+                        })}
+
+                      {selectedReferrerType === "customer" &&
+                        customerList.map((user) => (
+                          <option key={user._id} value={user.full_name}>
+                            {user.full_name} ({user.phone_number})
+                          </option>
+                        ))}
+                    </select>
+
+                    <input
+                      type="date"
+                      className="border p-2 rounded text-sm"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                    />
+                    <input
+                      type="date"
+                      className="border p-2 rounded text-sm"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                    />
+
+                    <select
+                      className="border p-2 rounded text-sm min-w-[200px]"
+                      value={selectedGroupName}
+                      onChange={(e) => setSelectedGroupName(e.target.value)}
+                    >
+                      <option value="">All Groups</option>
+                      {groupList.map((group) => (
+                        <option key={group._id} value={group.group_name}>
+                          {group.group_name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="flex justify-between items-center py-2">
+                      <label className="flex items-center gap-2 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={
+                            TableUsers.length > 0 &&
+                            TableUsers.every((u) => selectUser[u._id])
+                          }
+                          onChange={(e) => handleSelectAll(e.target.checked)}
+                        />
+                        Select All
+                      </label>
+                      <span className="text-sm text-gray-600">
+                        Selected: {whatsappData.length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={sendWhatsapp}
+                  className="relative bg-green-600 text-white px-4 py-2 rounded shadow-md hover:bg-green-700 transition duration-200 flex items-center"
+                >
+                  {visibleSelectedCount > 0 && (
+                    <div
+                      className="min-w-6 h-6 absolute -right-3 -top-2 shadow-lg hover:bg-red-600 bg-red-400 rounded-full text-white flex items-center justify-center text-xs"
+                      title={`Message will be sent to total ${visibleSelectedCount} customers`}
+                    >
+                      <span>{visibleSelectedCount}</span>
+                    </div>
+                  )}
+                  <FaWhatsapp className="mr-2" size={20} />
+                  WhatsApp
+                </button>
+              </div>
+            </div>
+            {TableUsers.length > 0 && !isLoading ? (
+              <DataTable
+                isExportEnabled={false}
+                data={TableUsers}
+                columns={columns}
+                exportedFileName={`whatsapp-${
+                  TableUsers.length > 0
+                    ? TableUsers[0].full_name +
+                      " to " +
+                      TableUsers[TableUsers.length - 1].full_name
+                    : "empty"
+                }.csv`}
+              />
+            ) : (
+              <CircularLoader
+                isLoading={isLoading}
+                failure={TableUsers.length <= 0 && !isLoading}
+                data={"Group Data"}
+              />
+            )}
+          </div>
+        </div>
+        <Modal isVisible={showModal} onClose={() => setShowModal(false)}>
+          <div className="py-6 px-5 lg:px-8 text-left">
+            <h3 className="mb-4 text-xl font-bold text-gray-900">
+              Send Message
+            </h3>
+            <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+              <div>
+                <label
+                  className="block mb-2 text-sm font-medium text-gray-900"
+                  htmlFor="template"
+                >
+                  Template Name
+                </label>
+                <input
+                  type="text"
+                  name="template_name"
+                  value={formData.template_name}
+                  onChange={handleChange}
+                  id="templateName"
+                  placeholder="Paste template name"
+                  required
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 w-full p-2.5"
+                />
+              </div>
+              {errors.template_name && (
+                <p className="mt-2 text-sm text-red-600">
+                  {errors.template_name}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={disabled}
+                className="w-full text-white bg-green-700 hover:bg-green-800
+             focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        </Modal>
+      </div>
+    </>
+  );
+};
+
+export default WhatsappPromo;

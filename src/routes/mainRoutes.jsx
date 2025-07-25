@@ -65,6 +65,11 @@ import PayInMenu from "../pages/PayInMenu";
 import RegistrationFee from "../pages/RegistrationFees";
 import PrintPaymentOut from "../pages/PrintPaymentOut";
 import RegistrationReceipt from "../pages/RegistrationReceipt";
+import AuctionIntemationMessage from "../pages/AuctionIntemationMessage";
+import OverDueMessage from "../pages/OverDueMessage";
+import DueEmail from "../pages/DueEmail";
+import OverDueEmail from "../pages/OverDueEmail";
+import WhatsappPromo from "../pages/WhatsappPromo";
 const mainRoutes = createBrowserRouter([
   {
     path: "/",
@@ -442,6 +447,11 @@ const mainRoutes = createBrowserRouter([
       { path: "what-add", element: <WhatsappAdd /> },
       { path: "failed-whatuser", element: <WhatsappFailed /> },
       { path: "due-message", element: <DueMessage /> },
+      {path: "auction-intimation-message", element: <AuctionIntemationMessage/>},
+       {path: "over-due-message", element: <OverDueMessage/>},
+      {path: "due-email", element: <DueEmail/>},
+      {path: "over-due-email", element: <OverDueEmail/>},
+      {path: "what-promo", element: <WhatsappPromo />},
     ],
   },
 ]);
