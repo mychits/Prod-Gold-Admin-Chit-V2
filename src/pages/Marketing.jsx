@@ -115,6 +115,12 @@ const mainMenus = [
         link: "/marketing/over-due-message",
         icon: <RiMoneyRupeeCircleLine size={28}  />,
       },
+       {
+        key: "#12",
+        title: "Whatsapp Bid Winner",
+        link: "/marketing/bid-winner",
+        icon: <RiMoneyRupeeCircleLine size={28}  />,
+      },
     ],
   },
   {

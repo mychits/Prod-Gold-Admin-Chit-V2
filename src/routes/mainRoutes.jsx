@@ -71,6 +71,7 @@ import DueEmail from "../pages/DueEmail";
 import OverDueEmail from "../pages/OverDueEmail";
 import WhatsappPromo from "../pages/WhatsappPromo";
 import QuickSearch from "../pages/QuickSearch";
+import BidWinner from "../pages/BidWinner";
 const mainRoutes = createBrowserRouter([
   {
     path: "/",
@@ -466,6 +467,7 @@ const mainRoutes = createBrowserRouter([
       { path: "due-email", element: <DueEmail /> },
       { path: "over-due-email", element: <OverDueEmail /> },
       { path: "what-promo", element: <WhatsappPromo /> },
+      {path: "bid-winner", element: <BidWinner/>},
     ],
   },
 ]);

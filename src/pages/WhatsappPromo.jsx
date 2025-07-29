@@ -33,7 +33,7 @@ const WhatsappPromo = () => {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [selectedReferrerName, setSelectedReferrerName] = useState("");
-  const [selectedReferrerType, setSelectedReferrerType] = useState("employee"); // Initial filter type
+  const [selectedReferrerType, setSelectedReferrerType] = useState(""); // Initial filter type
   const [agentList, setAgentList] = useState([]);
   const [leadList, setLeadList] = useState([]);
   const [customerList, setCustomerList] = useState([]);
@@ -44,9 +44,9 @@ const WhatsappPromo = () => {
   // Effect to update the header title based on selectedReferrerType
   useEffect(() => {
     const typeMap = {
-      customer: "Customers",
-      agent: "Agents",
-      employee: "Employees",
+      customer: "Customer",
+      agent: "Agent",
+      employee: "Employee",
       lead: "Leads",
     };
     setUserType(typeMap[selectedReferrerType] || "Users"); // Default to "Users"
@@ -179,6 +179,7 @@ const WhatsappPromo = () => {
 
     try {
       const res = await api.post("/whatsapp/whatsapp-promo-message", payload);
+      console.info(res, "test");
 
       setAlertConfig({
         type: "success",
@@ -203,182 +204,7 @@ const WhatsappPromo = () => {
     }
   };
 
-  // useEffect(() => {
-  //   const fetchUsers = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       if (selectedReferrerType === "lead") {
-  //         const response = await api.get("/lead/get-lead");
-  //         const leads = Array.isArray(response.data)
-  //           ? response.data
-  //           : response.data?.leads || [];
-
-  //         const filtered = leads.filter((lead) => {
-  //           const created = lead?.createdAt ? new Date(lead.createdAt) : null;
-  //           const from = fromDate ? new Date(fromDate) : null;
-  //           let to = toDate ? new Date(toDate) : null;
-  //           if (to) to.setHours(23, 59, 59, 999);
-
-  //           const isWithinDateRange =
-  //             (!from || (created && created >= from)) &&
-  //             (!to || (created && created <= to));
-
-  //           const lead_type_name =
-  //             lead.lead_type === "customer"
-  //               ? lead?.lead_customer?.full_name
-  //               : lead.lead_type === "agent"
-  //               ? lead?.lead_agent?.name
-  //               : "";
-
-  //           const normalizedLeadName = lead_type_name?.toLowerCase() || "";
-  //           const normalizedReferrerName = selectedReferrerName
-  //             .trim()
-  //             .toLowerCase();
-
-  //           // ✅ Name filter: match if referrer is empty or matches
-  //           const nameMatches =
-  //             !normalizedReferrerName ||
-  //             normalizedLeadName.includes(normalizedReferrerName);
-
-  //           // ✅ Group filter
-  //           const groupName = lead?.group_id?.group_name?.toLowerCase() || "";
-  //           const matchesGroup =
-  //             !selectedGroupName ||
-  //             groupName === selectedGroupName.trim().toLowerCase();
-
-  //           return isWithinDateRange && nameMatches && matchesGroup;
-  //         });
-
-  //         const formatted = filtered.map((lead, index) => ({
-  //           _id: lead._id,
-  //           id: index + 1,
-  //           full_name: lead?.lead_name || "NA",
-  //           phone_number: lead?.lead_phone || "NA",
-  //           group_name: lead?.group_id?.group_name || "NA",
-  //           group_id: lead?.group_id?._id || "NA",
-  //           createdAt: lead?.createdAt ? new Date(lead.createdAt) : null,
-  //           enrollment_date: lead?.createdAt
-  //             ? new Date(lead.createdAt).toISOString().split("T")[0]
-  //             : "NA",
-  //         }));
-
-  //         const newSelection = {};
-  //         formatted.forEach((u) => {
-  //           newSelection[u._id] = false;
-  //         });
-  //         setSelectUser(newSelection);
-  //         setTableUsers(formatted);
-  //         return;
-  //       }
-
-  //       // All other types: enroll-report
-  //       const response = await api.get(`/enroll-report/get-enroll-report`);
-  //       if (!response.data) {
-  //         setIsLoading(false);
-  //         return;
-  //       }
-
-  //       const filtered = response.data.filter((group) => {
-
-          
-  //         const created = group?.createdAt ? moment(group.createdAt) : null;
-  //         const from = fromDate
-  //           ? moment(fromDate, "YYYY-MM-DD").startOf("day")
-  //           : null;
-  //         const to = toDate ? moment(toDate, "YYYY-MM-DD").endOf("day") : null;
-
-  //         //console.info(from.format(), "this is from");
-  //         //console.info(to.format(), "this is to");
-
-  //         const isWithinDateRange =
-  //           (!from || (created && created.isSameOrAfter(from))) &&
-  //           (!to || (created && created.isSameOrBefore(to)));
-
-  //         const normalizedReferrerName = selectedReferrerName
-  //           .trim()
-  //           .toLowerCase();
-
-  //         let matchesAgent = false;
-  //         if (selectedReferrerType === "agent") {
-  //           const agentName = group?.agent?.name?.toLowerCase();
-  //           const agentType = group?.agent?.agent_type;
-  //           matchesAgent =
-  //             agentType === "agent" &&
-  //             agentName &&
-  //             agentName.includes(normalizedReferrerName);
-  //         }
-
-  //         let matchesEmployee = false;
-  //         if (selectedReferrerType === "employee") {
-  //           const employeeName = group?.agent?.name?.toLowerCase();
-  //           const employeeType = group?.agent?.agent_type;
-  //           matchesEmployee =
-  //             employeeType === "employee" &&
-  //             employeeName &&
-  //             employeeName.includes(normalizedReferrerName);
-  //         }
-
-  //         let matchesCustomer = false;
-  //         if (selectedReferrerType === "customer") {
-  //           const customerName =
-  //             group?.referred_customer?.full_name?.toLowerCase();
-  //           matchesCustomer =
-  //             customerName && customerName.includes(normalizedReferrerName);
-  //         }
-
-  //         const typeMatch =
-  //           selectedReferrerType === "" ||
-  //           matchesAgent ||
-  //           matchesEmployee ||
-  //           matchesCustomer;
-
-  //         const groupName = group?.group_id?.group_name?.toLowerCase() || "";
-  //         const matchesGroup =
-  //           !selectedGroupName ||
-  //           groupName === selectedGroupName.trim().toLowerCase();
-
-  //         return typeMatch && isWithinDateRange && matchesGroup;
-
-  //         // return typeMatch && isWithinDateRange;
-  //       });
-
-  //       const formatted = filtered
-  //         .map((group, index) => ({
-  //           _id: group._id,
-  //           id: index + 1,
-  //           full_name: group?.user_id?.full_name || "NA",
-  //           phone_number: group?.user_id?.phone_number || "NA",
-  //           group_name: group?.group_id?.group_name || "NA",
-  //           group_id: group?.group_id?._id || "NA",
-  //           createdAt: group?.createdAt ? new Date(group.createdAt) : null,
-  //           enrollment_date: group?.user_id?.createdAt
-  //             ? new Date(group.user_id.createdAt).toISOString().split("T")[0]
-  //             : "NA",
-  //         }))
-  //         .filter(Boolean);
-
-  //       const newSelection = {};
-  //       formatted.forEach((u) => {
-  //         newSelection[u._id] = false;
-  //       });
-  //       setSelectUser(newSelection);
-  //       setTableUsers(formatted);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-
-  //   fetchUsers();
-  // }, [
-  //   selectedReferrerName,
-  //   selectedReferrerType,
-  //   fromDate,
-  //   toDate,
-  //   selectedGroupName,
-  // ]);
-useEffect(() => {
+  useEffect(() => {
     const fetchUsers = async () => {
       setIsLoading(true);
       try {
@@ -391,9 +217,7 @@ useEffect(() => {
           const from = fromDate
             ? moment(fromDate, "YYYY-MM-DD").startOf("day")
             : null;
-          const to = toDate
-            ? moment(toDate, "YYYY-MM-DD").endOf("day")
-            : null;
+          const to = toDate ? moment(toDate, "YYYY-MM-DD").endOf("day") : null;
 
           const filtered = leads.filter((lead) => {
             const created = lead?.createdAt ? moment(lead.createdAt) : null;
@@ -410,8 +234,9 @@ useEffect(() => {
                 : "";
 
             const normalizedLeadName = lead_type_name?.toLowerCase() || "";
-            const normalizedReferrerName =
-              selectedReferrerName.trim().toLowerCase();
+            const normalizedReferrerName = selectedReferrerName
+              .trim()
+              .toLowerCase();
 
             const nameMatches =
               !normalizedReferrerName ||
@@ -455,9 +280,7 @@ useEffect(() => {
         const from = fromDate
           ? moment(fromDate, "YYYY-MM-DD").startOf("day")
           : null;
-        const to = toDate
-          ? moment(toDate, "YYYY-MM-DD").endOf("day")
-          : null;
+        const to = toDate ? moment(toDate, "YYYY-MM-DD").endOf("day") : null;
 
         const filtered = response.data.filter((group) => {
           const created = group?.createdAt ? moment(group.createdAt) : null;
@@ -466,8 +289,9 @@ useEffect(() => {
             (!from || (created && created.isSameOrAfter(from))) &&
             (!to || (created && created.isSameOrBefore(to)));
 
-          const normalizedReferrerName =
-            selectedReferrerName.trim().toLowerCase();
+          const normalizedReferrerName = selectedReferrerName
+            .trim()
+            .toLowerCase();
 
           const agentName = group?.agent?.name?.toLowerCase();
           const agentType = group?.agent?.agent_type;
@@ -727,16 +551,19 @@ useEffect(() => {
           <div className="flex-grow p-1">
             <div className="mt-2 mb-2">
               <div className="flex justify-between items-center w-full">
-                <div className="flex flex-col">
+                <div className="flex flex-col space-y-4">
                   <div className="flex">
-                    <FaWhatsapp color="green" size="30" className="m-2" />
-                    <h1 className="text-2xl font-semibold flex items-center">
+                    <FaWhatsapp color="green" size="30" className="m-2 mb-10" />
+                    <h1 className="text-2xl font-semibold flex items-center mb-10">
                       Whatsapp {userType}
                     </h1>
                   </div>
 
-                  <div className="flex items-center my-2 cursor-pointer select-none"></div>
+                  {/* <div className="flex items-center space-x-4">  
+                    <label className="font-medium">Select Any</label>
+                  </div>
                   <div className="flex flex-wrap items-center gap-4 my-4">
+                    
                     <select
                       className="border rounded px-8 py-2 text-sm"
                       value={selectedReferrerType}
@@ -748,13 +575,18 @@ useEffect(() => {
                       <option value="customer">Customer</option>
                       <option value="employee">Employee</option>
                     </select>
-
+                    <div>
+                    <div className="">
+                    <label className="font-medium">Select {userType} Name</label>
+                  </div>
+                  
+                  <div className="">
                     <select
                       className="border p-2 px-10 rounded text-sm min-w-[200px]"
                       value={selectedReferrerName}
                       onChange={(e) => setSelectedReferrerName(e.target.value)}
                     >
-                      <option value="">Select Referred By</option>
+                      <option value="">All</option>
 
                       {selectedReferrerType === "agent" &&
                         agentList.map((agent) => (
@@ -793,25 +625,40 @@ useEffect(() => {
                           </option>
                         ))}
                     </select>
-
+                  </div>
+                  </div>
+                  <div>
+                    <div>
+                  <label className="font-medium">From Date</label>
+                  </div>
                     <input
                       type="date"
                       className="border p-2 rounded text-sm"
                       value={fromDate}
                       onChange={(e) => setFromDate(e.target.value)}
                     />
+                    </div>
+                    <div>
+                      <div>
+                    <label className="font-medium">To Date</label>
+                    </div>
                     <input
                       type="date"
                       className="border p-2 rounded text-sm"
                       value={toDate}
                       onChange={(e) => setToDate(e.target.value)}
                     />
-
+                    </div>
+                    <div>
+                      <div>
+                    <label className="font-medium">Select Group</label>
+                    </div>
                     <select
                       className="border p-2 rounded text-sm min-w-[200px]"
                       value={selectedGroupName}
                       onChange={(e) => setSelectedGroupName(e.target.value)}
                     >
+                      
                       <option value="">All Groups</option>
                       {groupList.map((group) => (
                         <option key={group._id} value={group.group_name}>
@@ -819,8 +666,133 @@ useEffect(() => {
                         </option>
                       ))}
                     </select>
+                    </div>
 
                     <div className="flex justify-between items-center py-2">
+                      <label className="flex items-center gap-2 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={
+                            TableUsers.length > 0 &&
+                            TableUsers.every((u) => selectUser[u._id])
+                          }
+                          onChange={(e) => handleSelectAll(e.target.checked)}
+                        />
+                        Select All
+                      </label>
+                    </div>
+                  </div> */}
+                  <div className="flex flex-wrap items-center space-x-4 mt-4 mb-2">
+                    {/* Select Any Dropdown */}
+                    <div className="flex flex-col space-y-2 mb-5">
+                      <label className="font-medium">Select Any</label>
+                      <select
+                        className="border rounded px-10 py-2 text-sm"
+                        value={selectedReferrerType}
+                        onChange={(e) =>
+                          setSelectedReferrerType(e.target.value)
+                        }
+                      >
+                        <option value="">All</option>
+                        <option value="agent">Agent</option>
+                        <option value="lead">Lead</option>
+                        <option value="customer">Customer</option>
+                        <option value="employee">Employee</option>
+                      </select>
+                    </div>
+
+                    {/* Select {userType} Name Dropdown */}
+                    {selectedReferrerType && (
+                      <div className="flex flex-col space-y-2 mb-5">
+                        <label className="font-medium">
+                          Select {userType} Name (Referral)
+                        </label>
+                        <select
+                          className="border p-2 px-8 rounded text-sm min-w-[200px]"
+                          value={selectedReferrerName}
+                          onChange={(e) =>
+                            setSelectedReferrerName(e.target.value)
+                          }
+                        >
+                          <option value="">All</option>
+                          {selectedReferrerType === "agent" &&
+                            agentList.map((agent) => (
+                              <option key={agent._id} value={agent.name}>
+                                {agent.name} ({agent.phone_number})
+                              </option>
+                            ))}
+                          {selectedReferrerType === "employee" &&
+                            agentList.map((agent) => (
+                              <option key={agent._id} value={agent.name}>
+                                {agent.name} ({agent.phone_number})
+                              </option>
+                            ))}
+                          {selectedReferrerType === "lead" &&
+                            leadList.map((lead) => {
+                              const lead_type_name =
+                                lead?.lead_type === "customer"
+                                  ? lead?.lead_customer?.full_name
+                                  : lead?.lead_type === "agent"
+                                  ? lead?.lead_agent?.name
+                                  : "";
+
+                              return (
+                                <option key={lead._id} value={lead_type_name}>
+                                  {lead_type_name} ({lead?.lead_phone || "NA"})
+                                </option>
+                              );
+                            })}
+                          {selectedReferrerType === "customer" &&
+                            customerList.map((user) => (
+                              <option key={user._id} value={user.full_name}>
+                                {user.full_name} ({user.phone_number})
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* From Date */}
+                    <div className="flex flex-col space-y-2 mb-5">
+                      <label className="font-medium">From Date</label>
+                      <input
+                        type="date"
+                        className="border p-2 rounded text-sm"
+                        value={fromDate}
+                        onChange={(e) => setFromDate(e.target.value)}
+                      />
+                    </div>
+
+                    {/* To Date */}
+                    <div className="flex flex-col space-y-2 mb-5">
+                      <label className="font-medium">To Date</label>
+                      <input
+                        type="date"
+                        className="border p-2 rounded text-sm"
+                        value={toDate}
+                        onChange={(e) => setToDate(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Select Group */}
+                    <div className="flex flex-col space-y-2 mb-5">
+                      <label className="font-medium">Select Group</label>
+                      <select
+                        className="border p-2 rounded text-sm min-w-[200px]"
+                        value={selectedGroupName}
+                        onChange={(e) => setSelectedGroupName(e.target.value)}
+                      >
+                        <option value="">All</option>
+                        {groupList.map((group) => (
+                          <option key={group._id} value={group.group_name}>
+                            {group.group_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Select All Checkbox */}
+                    <div className="flex items-center space-x-2 mt-2">
                       <label className="flex items-center gap-2 font-medium">
                         <input
                           type="checkbox"
