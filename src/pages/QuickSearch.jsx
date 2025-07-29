@@ -150,18 +150,18 @@ const QuickSearch = () => {
 
         <div className="flex-grow p-7">
           <h1 className="text-xl font-bold">Search Filter</h1>
-          <div className="grid grid-cols-12 gap-3 my-9">
+            <div className="grid grid-cols-12 gap-2 my-6">
             {filters.map((filter) => {
               const isActive = activeFilters.includes(filter.id);
               return (
                 <button
                   key={filter.id}
                   onClick={() => handleFilterToggle(filter.id)}
-                  className={`col-span-2 rounded-full bg-gradient-to-r ${
+                  className={`col-span-3 md:col-span-2 lg:col-span-1 rounded-full text-[11px] font-medium uppercase tracking-wider transition-all duration-200 px-2.5 py-1.5 border focus:outline-none focus:ring-1 focus:ring-offset-1 ${
                     isActive
-                      ? "from-blue-500 to-blue-700"
-                      : "from-gray-300 to-gray-400 text-gray-800"
-                  } text-white font-semibold shadow-md hover:from-blue-300 hover:to-blue-400 transition duration-300 ease-in-out py-2 px-4 text-center`}
+                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white border-blue-500 shadow-sm hover:to-blue-700 focus:ring-blue-400"
+                      : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 focus:ring-gray-300"
+                  } hover:shadow-md hover:-translate-y-0.5 active:translate-y-0`}
                 >
                   {filter.filterName}
                 </button>
