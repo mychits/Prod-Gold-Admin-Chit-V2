@@ -12,7 +12,10 @@ import moment from "moment";
 const WhatsappPromo = () => {
   const [TableUsers, setTableUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
-
+  const now = new Date();
+  const todayString = now.toISOString().split("T")[0];
+  const [selectedFromDate, setSelectedFromDate] = useState(todayString);
+  const [selectedToDate, setSelectedToDate] = useState(todayString);
   const [whatsappData, setWhatsappData] = useState([]);
   const [disabled, setDisabled] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
@@ -42,12 +45,13 @@ const WhatsappPromo = () => {
   const [groupList, setGroupList] = useState([]);
   const [selectedGroupName, setSelectedGroupName] = useState("");
   const [allLeads, setAllLeads] = useState([]);
-const [allEnrolls, setAllEnrolls] = useState([]);
-
+  const [allEnrolls, setAllEnrolls] = useState([]);
+  const [selectedLabel, setSelectedLabel] = useState("Today");
+  
   // Effect to update the header title based on selectedReferrerType
   useEffect(() => {
     const typeMap = {
-      customer: "Customer",
+      customer: "Staff",
       agent: "Agent",
       employee: "Employee",
       lead: "Leads",
@@ -78,26 +82,77 @@ const [allEnrolls, setAllEnrolls] = useState([]);
     fetchLeads();
   }, []);
 
+ const handleSelectFilter = (value) => {
+  setSelectedLabel(value);
+
+  const today = new Date();
+  const formatDate = (date) => date.toLocaleDateString("en-CA");
+
+  if (value === "Today") {
+    const formatted = formatDate(today);
+    setSelectedFromDate(formatted);
+    setSelectedToDate(formatted);
+
+  } else if (value === "Yesterday") {
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const formatted = formatDate(yesterday);
+    setSelectedFromDate(formatted);
+    setSelectedToDate(formatted);
+
+  } else if (value === "ThisMonth") {
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    setSelectedFromDate(formatDate(start));
+    setSelectedToDate(formatDate(end));
+
+  } else if (value === "LastMonth") {
+    const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const end = new Date(today.getFullYear(), today.getMonth(), 0);
+    setSelectedFromDate(formatDate(start));
+    setSelectedToDate(formatDate(end));
+
+  } else if (value === "ThisYear") {
+    const start = new Date(today.getFullYear(), 0, 1);
+    const end = new Date(today.getFullYear(), 11, 31);
+    setSelectedFromDate(formatDate(start));
+    setSelectedToDate(formatDate(end));
+
+  } else if (value === "All") {
+    const start = new Date(2000, 0, 1);
+    const end = today;
+    setSelectedFromDate(formatDate(start));
+    setSelectedToDate(formatDate(end));
+
+  } else if (value === "Custom") {
+    // ✅ Do NOT override dates. Allow user to select manually.
+    // Just keep the currently selectedFromDate / selectedToDate
+  }
+};
+
+
   useEffect(() => {
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const [leadRes, enrollRes] = await Promise.all([
-        api.get("/lead/get-lead"),
-        api.get("/enroll-report/get-enroll-report"),
-      ]);
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [leadRes, enrollRes] = await Promise.all([
+          api.get("/lead/get-lead"),
+          api.get("/enroll-report/get-enroll-report"),
+        ]);
 
-      setAllLeads(Array.isArray(leadRes.data) ? leadRes.data : leadRes.data?.leads || []);
-      setAllEnrolls(enrollRes.data || []);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        setAllLeads(
+          Array.isArray(leadRes.data) ? leadRes.data : leadRes.data?.leads || []
+        );
+        setAllEnrolls(enrollRes.data || []);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  fetchData();
-}, []);
+    fetchData();
+  }, []);
   useEffect(() => {
     const fetchReferrers = async () => {
       try {
@@ -124,25 +179,27 @@ const [allEnrolls, setAllEnrolls] = useState([]);
           // setCustomerList(
           //   Array.isArray(res.data) ? res.data : res.data.users || []
           // );
-           try {
-    // ✅ Fetch Agents
-    const agentRes = await api.get("/agent/get");
-    const allAgents = Array.isArray(agentRes.data)
-      ? agentRes.data
-      : agentRes.data.agent || [];
-    const filteredAgents = allAgents.filter((a) => a.agent_type === "agent");
+          try {
+            // ✅ Fetch Agents
+            const agentRes = await api.get("/agent/get");
+            const allAgents = Array.isArray(agentRes.data)
+              ? agentRes.data
+              : agentRes.data.agent || [];
+            const filteredAgents = allAgents.filter(
+              (a) => a.agent_type === "agent"
+            );
 
-    // ✅ Fetch Employees
-    const empRes = await api.get("/agent/get-employee");
-    const employees = Array.isArray(empRes.data.employee)
-      ? empRes.data.employee
-      : [];
+            // ✅ Fetch Employees
+            const empRes = await api.get("/agent/get-employee");
+            const employees = Array.isArray(empRes.data.employee)
+              ? empRes.data.employee
+              : [];
 
-    // ✅ Combine Agents + Employees
-    setAgentList([...filteredAgents, ...employees]); 
-  } catch (error) {
-    console.error("Error fetching agents and employees:", error);
-  }
+            // ✅ Combine Agents + Employees
+            setAgentList([...filteredAgents, ...employees]);
+          } catch (error) {
+            console.error("Error fetching agents and employees:", error);
+          }
         }
       } catch (err) {
         console.error("Error fetching referrer list:", err);
@@ -156,9 +213,11 @@ const [allEnrolls, setAllEnrolls] = useState([]);
     const filtered = TableUsers.filter((u) => {
       //const enrollmentDate = new Date(u.createdAt || u.enrollmentDate);
       const enrollmentDate = u.createdAt ? new Date(u.createdAt) : null;
-      const matchFrom = fromDate ? enrollmentDate >= new Date(fromDate) : true;
-      const matchTo = toDate
-        ? enrollmentDate <= new Date(toDate + "T23:59:59")
+      const matchFrom = selectedFromDate
+        ? enrollmentDate >= new Date(selectedFromDate)
+        : true;
+      const matchTo = selectedToDate
+        ? enrollmentDate <= new Date(selectedToDate + "T23:59:59")
         : true;
       return matchFrom && matchTo;
     });
@@ -179,7 +238,7 @@ const [allEnrolls, setAllEnrolls] = useState([]);
         isSelected,
       };
     });
-  }, [TableUsers, fromDate, toDate, selectUser]);
+  }, [TableUsers, selectedFromDate, selectedToDate, selectUser]);
 
   const visibleSelectedCount = useMemo(() => {
     return filteredUsers.filter((user) => user.isSelected).length;
@@ -247,174 +306,35 @@ const [allEnrolls, setAllEnrolls] = useState([]);
     }
   };
 
-  // useEffect(() => {
-  //   const fetchUsers = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       if (selectedReferrerType === "lead") {
-  //         const response = await api.get("/lead/get-lead");
-  //         const leads = Array.isArray(response.data)
-  //           ? response.data
-  //           : response.data?.leads || [];
 
-  //         const from = fromDate
-  //           ? moment(fromDate, "YYYY-MM-DD").startOf("day")
-  //           : null;
-  //         const to = toDate ? moment(toDate, "YYYY-MM-DD").endOf("day") : null;
+  const filteredData = useMemo(() => {
+  // ✅ Use selectedFromDate and selectedToDate
+  const from = selectedFromDate
+    ? moment(selectedFromDate, "YYYY-MM-DD").startOf("day")
+    : null;
 
-  //         const filtered = leads.filter((lead) => {
-  //           const created = lead?.createdAt ? moment(lead.createdAt) : null;
-
-  //           const isWithinDateRange =
-  //             (!from || (created && created.isSameOrAfter(from))) &&
-  //             (!to || (created && created.isSameOrBefore(to)));
-
-  //           const lead_type_name =
-  //             lead.lead_type === "customer"
-  //               ? lead?.lead_customer?.full_name
-  //               : lead.lead_type === "agent"
-  //               ? lead?.lead_agent?.name
-  //               : "";
-
-  //           const normalizedLeadName = lead_type_name?.toLowerCase() || "";
-  //           const normalizedReferrerName = selectedReferrerName
-  //             .trim()
-  //             .toLowerCase();
-
-  //           const nameMatches =
-  //             !normalizedReferrerName ||
-  //             normalizedLeadName.includes(normalizedReferrerName);
-
-  //           const groupName = lead?.group_id?.group_name?.toLowerCase() || "";
-  //           const matchesGroup =
-  //             !selectedGroupName ||
-  //             groupName === selectedGroupName.trim().toLowerCase();
-
-  //           return isWithinDateRange && nameMatches && matchesGroup;
-  //         });
-
-  //         const formatted = filtered.map((lead, index) => ({
-  //           _id: lead._id,
-  //           id: index + 1,
-  //           full_name: lead?.lead_name || "NA",
-  //           phone_number: lead?.lead_phone || "NA",
-  //           group_name: lead?.group_id?.group_name || "NA",
-  //           group_id: lead?.group_id?._id || "NA",
-  //           createdAt: lead?.createdAt ? new Date(lead.createdAt) : null,
-  //           enrollment_date: lead?.createdAt
-  //             ? new Date(lead.createdAt).toISOString().split("T")[0]
-  //             : "NA",
-  //         }));
-
-  //         const newSelection = {};
-  //         formatted.forEach((u) => (newSelection[u._id] = false));
-  //         setSelectUser(newSelection);
-  //         setTableUsers(formatted);
-  //         return;
-  //       }
-
-  //       // -------- Enroll report ---------
-  //       const response = await api.get(`/enroll-report/get-enroll-report`);
-  //       if (!response.data) {
-  //         setIsLoading(false);
-  //         return;
-  //       }
-
-  //       const from = fromDate
-  //         ? moment(fromDate, "YYYY-MM-DD").startOf("day")
-  //         : null;
-  //       const to = toDate ? moment(toDate, "YYYY-MM-DD").endOf("day") : null;
-
-  //       const filtered = response.data.filter((group) => {
-  //         const created = group?.createdAt ? moment(group.createdAt) : null;
-
-  //         const isWithinDateRange =
-  //           (!from || (created && created.isSameOrAfter(from))) &&
-  //           (!to || (created && created.isSameOrBefore(to)));
-
-  //         const normalizedReferrerName = selectedReferrerName
-  //           .trim()
-  //           .toLowerCase();
-
-  //         const agentName = group?.agent?.name?.toLowerCase();
-  //         const agentType = group?.agent?.agent_type;
-  //         const matchesAgent =
-  //           selectedReferrerType === "agent" &&
-  //           agentType === "agent" &&
-  //           agentName?.includes(normalizedReferrerName);
-
-  //         const matchesEmployee =
-  //           selectedReferrerType === "employee" &&
-  //           agentType === "employee" &&
-  //           agentName?.includes(normalizedReferrerName);
-
-  //         const matchesCustomer =
-  //           selectedReferrerType === "customer" &&
-  //           group?.referred_customer?.full_name
-  //             ?.toLowerCase()
-  //             .includes(normalizedReferrerName);
-
-  //         const typeMatch =
-  //           selectedReferrerType === "" ||
-  //           matchesAgent ||
-  //           matchesEmployee ||
-  //           matchesCustomer;
-
-  //         const groupName = group?.group_id?.group_name?.toLowerCase() || "";
-  //         const matchesGroup =
-  //           !selectedGroupName ||
-  //           groupName === selectedGroupName.trim().toLowerCase();
-
-  //         return typeMatch && isWithinDateRange && matchesGroup;
-  //       });
-
-  //       const formatted = filtered.map((group, index) => ({
-  //         _id: group._id,
-  //         id: index + 1,
-  //         full_name: group?.user_id?.full_name || "NA",
-  //         phone_number: group?.user_id?.phone_number || "NA",
-  //         group_name: group?.group_id?.group_name || "NA",
-  //         group_id: group?.group_id?._id || "NA",
-  //         createdAt: group?.createdAt ? new Date(group.createdAt) : null,
-  //         enrollment_date: group?.createdAt
-  //           ? new Date(group.createdAt).toISOString().split("T")[0]
-  //           : "NA",
-  //       }));
-
-  //       const newSelection = {};
-  //       formatted.forEach((u) => (newSelection[u._id] = false));
-  //       setSelectUser(newSelection);
-  //       setTableUsers(formatted);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-
-  //   fetchUsers();
-  // }, [
-  //   selectedReferrerName,
-  //   selectedReferrerType,
-  //   fromDate,
-  //   toDate,
-  //   selectedGroupName,
-  // ]);
-const filteredData = useMemo(() => {
-  const from = fromDate ? moment(fromDate, "YYYY-MM-DD").startOf("day") : null;
-  const to = toDate ? moment(toDate, "YYYY-MM-DD").endOf("day") : null;
+  const to = selectedToDate
+    ? moment(selectedToDate, "YYYY-MM-DD").endOf("day")
+    : null;
 
   const filterFn = (item) => {
     const created = item?.createdAt ? moment(item.createdAt) : null;
 
+    // ✅ Only apply date range if label is not "All"
     const isWithinDateRange =
       (!from || (created && created.isSameOrAfter(from))) &&
       (!to || (created && created.isSameOrBefore(to)));
 
     const normalizedName = selectedReferrerName.trim().toLowerCase();
 
-    // 🔹 Lead Filtering
     if (selectedReferrerType === "lead") {
+       if (
+    !item?.lead_customer?.full_name &&
+    !item?.group_id?.group_name &&
+    !item?.lead_customer?.phone_number
+  ) {
+    return false;
+  }
       const leadTypeName =
         item.lead_type === "customer"
           ? item?.lead_customer?.full_name
@@ -422,10 +342,10 @@ const filteredData = useMemo(() => {
           ? item?.lead_agent?.name
           : "";
 
-      // const nameMatches =
-      //   !normalizedName || leadTypeName.toLowerCase().includes(normalizedName);
       const nameMatches =
-  !normalizedName || (leadTypeName || "").toLowerCase().includes(normalizedName);
+        !normalizedName ||
+        (leadTypeName || "").toLowerCase().includes(normalizedName);
+
       const matchesGroup =
         !selectedGroupName ||
         (item?.group_id?.group_name || "").toLowerCase() ===
@@ -434,7 +354,6 @@ const filteredData = useMemo(() => {
       return isWithinDateRange && nameMatches && matchesGroup;
     }
 
-    // 🔹 Enrollment Filtering
     const agentName = item?.agent?.name?.toLowerCase();
     const agentType = item?.agent?.agent_type;
 
@@ -469,34 +388,58 @@ const filteredData = useMemo(() => {
   return selectedReferrerType === "lead"
     ? allLeads.filter(filterFn)
     : allEnrolls.filter(filterFn);
-}, [allLeads, allEnrolls, selectedReferrerName, selectedReferrerType, fromDate, toDate, selectedGroupName]);
+}, [
+  allLeads,
+  allEnrolls,
+  selectedReferrerName,
+  selectedReferrerType,
+  selectedFromDate,   // ✅ FIXED
+  selectedToDate,     // ✅ FIXED
+  selectedGroupName,
+]);
 
-useEffect(() => {
-  const formatted = filteredData.map((item, index) => ({
-    _id: item._id,
-    id: index + 1,
-    full_name:
-      selectedReferrerType === "lead"
-        ? item?.lead_name || "NA"
-        : item?.user_id?.full_name || "NA",
-    phone_number:
-      selectedReferrerType === "lead"
-        ? item?.lead_phone || "NA"
-        : item?.user_id?.phone_number || "NA",
-    group_name: item?.group_id?.group_name || "NA",
-    group_id: item?.group_id?._id || "NA",
-    createdAt: item?.createdAt ? new Date(item.createdAt) : null,
-    enrollment_date: item?.createdAt
-      ? new Date(item.createdAt).toISOString().split("T")[0]
-      : "NA",
-  }));
 
-  const newSelection = {};
-  formatted.forEach((u) => (newSelection[u._id] = false));
-  setSelectUser(newSelection);
-  setTableUsers(formatted);
-}, [filteredData]);
+  useEffect(() => {
+    const formatted = filteredData.filter((item) => {
+      const fullName =
+        selectedReferrerType === "lead"
+          ? item?.lead_name
+          : item?.user_id?.full_name;
+      const phoneNumber =
+        selectedReferrerType === "lead"
+          ? item?.lead_phone
+          : item?.user_id?.phone_number;
+      const groupName = item?.group_id?.group_name;
 
+      return fullName && phoneNumber && groupName; // keep only valid rows
+    }).
+    
+    
+    
+    map((item, index) => ({
+      _id: item._id,
+      id: index + 1,
+      full_name:
+        selectedReferrerType === "lead"
+          ? item?.lead_name || "NA"
+          : item?.user_id?.full_name || "NA",
+      phone_number:
+        selectedReferrerType === "lead"
+          ? item?.lead_phone || "NA"
+          : item?.user_id?.phone_number || "NA",
+      group_name: item?.group_id?.group_name || "NA",
+      group_id: item?.group_id?._id || "NA",
+      createdAt: item?.createdAt ? new Date(item.createdAt) : null,
+      enrollment_date: item?.createdAt
+        ? new Date(item.createdAt).toISOString().split("T")[0]
+        : "NA",
+    }));
+
+    const newSelection = {};
+    formatted.forEach((u) => (newSelection[u._id] = false));
+    setSelectUser(newSelection);
+    setTableUsers(formatted);
+  }, [filteredData]);
 
   useEffect(() => {
     const selectedIds = Object.values(selectUser).filter((v) => v).length;
@@ -552,28 +495,7 @@ useEffect(() => {
     });
   };
 
-  // const handleSelectAll = (checked) => {
-  //   const newSelection = {};
-  //   const newWhatsappData = [];
 
-  //   TableUsers.forEach((user) => {
-  //     newSelection[user._id] = checked;
-  //     if (checked) {
-  //       newWhatsappData.push({
-  //         info: {
-  //           userId: user._id, // ✅
-  //           userName: user.full_name || user.lead_name, // ✅
-  //           userPhone: user.phone_number || user.lead_phone, // ✅
-  //           groupName: user.group_name,
-  //           groupId: user.group_id?._id || user.group_id || "NA", // ✅
-  //         },
-  //       });
-  //     }
-  //   });
-
-  //   setSelectUser(newSelection);
-  //   setWhatsappData(newWhatsappData);
-  // };
   const handleSelectAll = (checked) => {
     const newSelection = {};
     const newWhatsappData = [];
@@ -698,130 +620,6 @@ useEffect(() => {
                       Whatsapp {userType}
                     </h1>
                   </div>
-
-                  {/* <div className="flex items-center space-x-4">  
-                    <label className="font-medium">Select Any</label>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-4 my-4">
-                    
-                    <select
-                      className="border rounded px-8 py-2 text-sm"
-                      value={selectedReferrerType}
-                      onChange={(e) => setSelectedReferrerType(e.target.value)}
-                    >
-                      <option value="">All</option>
-                      <option value="agent">Agent</option>
-                      <option value="lead">Lead</option>
-                      <option value="customer">Customer</option>
-                      <option value="employee">Employee</option>
-                    </select>
-                    <div>
-                    <div className="">
-                    <label className="font-medium">Select {userType} Name</label>
-                  </div>
-                  
-                  <div className="">
-                    <select
-                      className="border p-2 px-10 rounded text-sm min-w-[200px]"
-                      value={selectedReferrerName}
-                      onChange={(e) => setSelectedReferrerName(e.target.value)}
-                    >
-                      <option value="">All</option>
-
-                      {selectedReferrerType === "agent" &&
-                        agentList.map((agent) => (
-                          <option key={agent._id} value={agent.name}>
-                            {agent.name} ({agent.phone_number})
-                          </option>
-                        ))}
-
-                      {selectedReferrerType === "employee" &&
-                        agentList.map((agent) => (
-                          <option key={agent._id} value={agent.name}>
-                            {agent.name} ({agent.phone_number})
-                          </option>
-                        ))}
-
-                      {selectedReferrerType === "lead" &&
-                        leadList.map((lead) => {
-                          const lead_type_name =
-                            lead?.lead_type === "customer"
-                              ? lead?.lead_customer?.full_name
-                              : lead?.lead_type === "agent"
-                              ? lead?.lead_agent?.name
-                              : "";
-
-                          return (
-                            <option key={lead._id} value={lead_type_name}>
-                              {lead_type_name} ({lead?.lead_phone || "NA"})
-                            </option>
-                          );
-                        })}
-
-                      {selectedReferrerType === "customer" &&
-                        customerList.map((user) => (
-                          <option key={user._id} value={user.full_name}>
-                            {user.full_name} ({user.phone_number})
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  </div>
-                  <div>
-                    <div>
-                  <label className="font-medium">From Date</label>
-                  </div>
-                    <input
-                      type="date"
-                      className="border p-2 rounded text-sm"
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                    />
-                    </div>
-                    <div>
-                      <div>
-                    <label className="font-medium">To Date</label>
-                    </div>
-                    <input
-                      type="date"
-                      className="border p-2 rounded text-sm"
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                    />
-                    </div>
-                    <div>
-                      <div>
-                    <label className="font-medium">Select Group</label>
-                    </div>
-                    <select
-                      className="border p-2 rounded text-sm min-w-[200px]"
-                      value={selectedGroupName}
-                      onChange={(e) => setSelectedGroupName(e.target.value)}
-                    >
-                      
-                      <option value="">All Groups</option>
-                      {groupList.map((group) => (
-                        <option key={group._id} value={group.group_name}>
-                          {group.group_name}
-                        </option>
-                      ))}
-                    </select>
-                    </div>
-
-                    <div className="flex justify-between items-center py-2">
-                      <label className="flex items-center gap-2 font-medium">
-                        <input
-                          type="checkbox"
-                          checked={
-                            TableUsers.length > 0 &&
-                            TableUsers.every((u) => selectUser[u._id])
-                          }
-                          onChange={(e) => handleSelectAll(e.target.checked)}
-                        />
-                        Select All
-                      </label>
-                    </div>
-                  </div> */}
                   <div className="flex flex-wrap items-center space-x-4 mt-4 mb-2">
                     {/* Select Any Dropdown */}
                     <div className="flex flex-col space-y-2 mb-5">
@@ -845,7 +643,7 @@ useEffect(() => {
                     {selectedReferrerType && (
                       <div className="flex flex-col space-y-2 mb-5">
                         <label className="font-medium">
-                          Select {userType} Name (Referral)
+                          Select {userType} Name 
                         </label>
                         <select
                           className="border p-2 px-8 rounded text-sm min-w-[200px]"
@@ -888,37 +686,56 @@ useEffect(() => {
                                 {user.full_name} ({user.phone_number})
                               </option>
                             ))} */}
-                            {selectedReferrerType === "customer" &&
-  agentList.map((person) => (
-    <option key={person._id} value={person.name}>
-      {person.name} ({person.phone_number})
-    </option>
-  ))}
+                          {selectedReferrerType === "customer" &&
+                            agentList.map((person) => (
+                              <option key={person._id} value={person.name}>
+                                {person.name} ({person.phone_number})
+                              </option>
+                            ))}
                         </select>
                       </div>
                     )}
 
-                    {/* From Date */}
                     <div className="flex flex-col space-y-2 mb-5">
-                      <label className="font-medium">From Date</label>
-                      <input
-                        type="date"
+                      <label className="font-medium">Select Date Filter</label>
+                      <select
                         className="border p-2 rounded text-sm"
-                        value={fromDate}
-                        onChange={(e) => setFromDate(e.target.value)}
-                      />
+                        value={selectedLabel}
+                        onChange={(e) => handleSelectFilter(e.target.value)}
+                      >
+                        <option value="Today">Today</option>
+                        <option value="Yesterday">Yesterday</option>
+                        <option value="ThisMonth">This Month</option>
+                        <option value="LastMonth">Last Month</option>
+                        <option value="ThisYear">This Year</option>
+                        <option value="All">All</option>
+                        <option value="Custom">Custom</option>
+                      </select>
                     </div>
 
-                    {/* To Date */}
-                    <div className="flex flex-col space-y-2 mb-5">
-                      <label className="font-medium">To Date</label>
-                      <input
-                        type="date"
-                        className="border p-2 rounded text-sm"
-                        value={toDate}
-                        onChange={(e) => setToDate(e.target.value)}
-                      />
-                    </div>
+                  {selectedLabel === "Custom" && (
+  <>
+    <div className="flex flex-col space-y-2 mb-5">
+      <label className="font-medium">From Date</label>
+      <input
+        type="date"
+        className="border p-2 rounded text-sm"
+        value={selectedFromDate}
+        onChange={(e) => setSelectedFromDate(e.target.value)}
+      />
+    </div>
+
+    <div className="flex flex-col space-y-2 mb-5">
+      <label className="font-medium">To Date</label>
+      <input
+        type="date"
+        className="border p-2 rounded text-sm"
+        value={selectedToDate}
+        onChange={(e) => setSelectedToDate(e.target.value)}
+      />
+    </div>
+  </>
+)}
 
                     {/* Select Group */}
                     <div className="flex flex-col space-y-2 mb-5">

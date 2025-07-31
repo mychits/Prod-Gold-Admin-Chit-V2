@@ -510,7 +510,7 @@ const UserReport = () => {
     if (groupId) {
       try {
         const response = await api.post(
-          `/enroll/get-user-tickets-report/${groupId}`
+          `/enroll/get-user-refer-report/${groupId}`
         );
 
         if (response.data && response.data.length > 0) {
@@ -562,6 +562,8 @@ const UserReport = () => {
                       groupInstall +
                       firstDividentHead -
                       totalPaidAmount,
+                referred_type: group?.enrollment?.referred_type || "N/A",
+                referrer_name: group?.enrollment?.referrer_name || "N/A",
               };
             })
             .filter((item) => item !== null);
@@ -613,6 +615,8 @@ const UserReport = () => {
     { key: "id", header: "SL. NO" },
     { key: "group", header: "Group Name" },
     { key: "ticket", header: "Ticket" },
+    { key: "referred_type", header: "Referrer Type" },
+    { key: "referrer_name", header: "Referred By" },
     { key: "totalBePaid", header: "Amount to be Paid" },
     { key: "profit", header: "Profit" },
     { key: "toBePaidAmount", header: "Net To be Paid" },
