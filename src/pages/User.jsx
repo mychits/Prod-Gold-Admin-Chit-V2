@@ -11,9 +11,7 @@ import filterOption from "../helpers/filterOption";
 import CircularLoader from "../components/loaders/CircularLoader";
 import handleEnrollmentRequestPrint from "../components/printFormats/enrollmentRequestPrint";
 import CustomAlertDialog from "../components/alerts/CustomAlertDialog";
-import { Link } from "react-router-dom";
 import { fieldSize } from "../data/fieldSize";
-
 
 const User = () => {
   const [users, setUsers] = useState([]);
@@ -47,7 +45,6 @@ const User = () => {
     pincode: "",
     adhaar_no: "",
     pan_no: "",
-    customer_status: "inactive",
     track_source: "admin_panel",
     collection_area: "",
   });
@@ -61,7 +58,6 @@ const User = () => {
     pincode: "",
     adhaar_no: "",
     pan_no: "",
-    customer_status: "",
     title: "",
     gender: "",
     marital_status: "",
@@ -132,15 +128,28 @@ const User = () => {
         const response = await api.get("/user/get-user");
         setUsers(response.data);
         const formattedData = response.data.map((group, index) => ({
-          _id: group?._id,
+          _id: group._id,
           id: index + 1,
-          name: group?.full_name,
-          phone_number: group?.phone_number,
-          address: group?.address,
-          pincode: group?.pincode,
-          customer_id: group?.customer_id,
-          collection_area: group?.collection_area?.route_name,
-          customer_status: group?.customer_status,
+          name: group.full_name,
+          phone_number: group.phone_number,
+          address: group.address,
+          pincode: group.pincode,
+          customer_id: group.customer_id,
+          collection_area: group.collection_area?.route_name,
+          approval_status:
+            group.approval_status === "true" ? (
+              <div className="inline-block px-3 py-1 text-sm font-medium text-green-800 bg-green-100 rounded-full shadow-sm">
+                Approved
+              </div>
+            ) : group.approval_status === "false" ? (
+              <div className="inline-block px-3 py-1 text-sm font-medium text-red-800 bg-red-100 rounded-full shadow-sm">
+                Pending
+              </div>
+            ) : (
+              <div className="inline-block px-3 py-1 text-sm font-medium text-green-800 bg-green-100  rounded-full shadow-sm">
+                Approved
+              </div>
+            ),
           action: (
             <div className="flex justify-center gap-2">
               <Dropdown
@@ -187,20 +196,22 @@ const User = () => {
                       label: (
                         <div
                           className={`cursor-pointer ${
-                            group?.customer_status === "active"
-                              ? "text-red-600"
-                              : "text-green-600"
+                            group?.approval_status !== "true"
+                              ? "text-green-600"
+                              : "text-red-600"
                           }`}
                           onClick={() =>
                             handleCustomerStatus(
                               group?._id,
-                              group?.customer_status
+                              group?.approval_status !== "true"
+                                ? "true"
+                                : "false"
                             )
                           }
                         >
-                          {group?.customer_status === "active"
-                            ? "Deactivate"
-                            : "Activate"}
+                          {group?.approval_status !== "true"
+                            ? "Approve Customer"
+                            : "Un Approve Customer"}
                         </div>
                       ),
                     },
@@ -298,9 +309,6 @@ const User = () => {
       newErrors.full_name = "Full Name is required";
     }
 
-    // if (!data.email) {
-    //   newErrors.email = "Email is required";
-    // } else
     if (data.email && !regex.email.test(data.email)) {
       newErrors.email = "Invalid email format";
     }
@@ -314,10 +322,6 @@ const User = () => {
     if (!data.password) {
       newErrors.password = "Password is required";
     }
-    // else if (!regex.password.test(data.password)) {
-    //   newErrors.password =
-    //     "Password must contain at least 5 characters, one uppercase, one lowercase, one number, and one special character";
-    // }
 
     if (!data.pincode) {
       newErrors.pincode = "Pincode is required";
@@ -373,7 +377,7 @@ const User = () => {
           pincode: "",
           adhaar_no: "",
           pan_no: "",
-          customer_status: "inactive",
+
           track_source: "admin-panel",
         });
       } catch (error) {
@@ -414,13 +418,14 @@ const User = () => {
 
   const columns = [
     { key: "id", header: "SL. NO" },
+    { key: "approval_status", header: "Approval Status" },
     { key: "customer_id", header: "Customer Id" },
     { key: "name", header: "Customer Name" },
     { key: "phone_number", header: "Customer Phone Number" },
     { key: "address", header: "Customer Address" },
     { key: "pincode", header: "Customer Pincode" },
     { key: "collection_area", header: "Area" },
-    { key: "customer_status", header: "Customer Status" },
+
     { key: "action", header: "Action" },
   ];
 
@@ -535,22 +540,19 @@ const User = () => {
         console.warn("No user ID provided");
         return;
       }
-
-      const newStatus = currentStatus === "active" ? "inactive" : "active";
-
       const response = await api.put(`/user/update-user/${id}`, {
-        customer_status: newStatus,
+        approval_status: currentStatus,
       });
 
       if (response.status === 200) {
         setReloadTrigger((prev) => prev + 1);
         setAlertConfig({
           visibility: true,
-          message: `User status has been successfully updated to ${newStatus}`,
+          message: `User status has been successfully updated to ${currentStatus}`,
           type: "success",
         });
         console.info(
-          `Customer status updated to ${newStatus} for user ID:`,
+          `Approval status updated to ${currentStatus} for user ID:`,
           id
         );
       } else {
@@ -589,12 +591,13 @@ const User = () => {
       setErrors({});
     } catch (error) {
       console.error("Error updating user:", error);
-      //new code
-       if (
+      if (
         error.response &&
         error.response.data &&
         error.response.data.message &&
-        error.response.data.message.toLowerCase().includes("phone number already exists")
+        error.response.data.message
+          .toLowerCase()
+          .includes("phone number already exists")
       ) {
         setErrors((prevErrors) => ({
           ...prevErrors,
@@ -619,15 +622,6 @@ const User = () => {
       }
     }
   };
-  //     setAlertConfig({
-  //       visibility: true,
-  //       message:
-  //         error?.response?.data?.message ||
-  //         "An unexpected error occurred. Please try again.",
-  //       type: "error",
-  //     });
-  //   }
-  // };
 
   return (
     <>
@@ -929,60 +923,61 @@ const User = () => {
               Update Customer
             </h3>
             <form className="space-y-6" onSubmit={handleUpdate} noValidate>
-           
               <div className="flex flex-row justify-between space-x-4">
-              <div className="w-1/2">
-                <label
-                  className="block mb-2 text-sm font-medium text-gray-900"
-                  htmlFor="title"
-                >
-                  Title
-                </label>
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="title"
+                  >
+                    Title
+                  </label>
 
-                <Select
-                  className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
-                  placeholder="Select Title"
-                  popupMatchSelectWidth={false}
-                  showSearch
-                  name="title"
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().includes(input.toLowerCase())
-                  }
-                  value={updateFormData?.title || undefined}
-                  onChange={(value) => handleAntInputDSelect("title", value)}
-                >
-                  <Select.Option value="">Select Title</Select.Option>
-                  {["Mr", "Ms", "Mrs", "M/S", "Dr"].map((cTitle) => (
-                    <Select.Option key={cTitle} value={cTitle}>
-                      {cTitle}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </div>
+                  <Select
+                    className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                    placeholder="Select Title"
+                    popupMatchSelectWidth={false}
+                    showSearch
+                    name="title"
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    value={updateFormData?.title || undefined}
+                    onChange={(value) => handleAntInputDSelect("title", value)}
+                  >
+                    <Select.Option value="">Select Title</Select.Option>
+                    {["Mr", "Ms", "Mrs", "M/S", "Dr"].map((cTitle) => (
+                      <Select.Option key={cTitle} value={cTitle}>
+                        {cTitle}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
 
-              <div className="w-1/2">
-                <label
-                  className="block mb-2 text-sm font-medium text-gray-900"
-                  htmlFor="email"
-                >
-                  Full Name <span className="text-red-500 ">*</span>
-                </label>
-                <Input
-                  type="text"
-                  name="full_name"
-                  value={updateFormData?.full_name}
-                  onChange={handleInputChange}
-                  id="name"
-                  placeholder="Enter the Full Name"
-                  required
-                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
-                />
-                {errors.full_name && (
-                  <p className="mt-2 text-sm text-red-600">
-                    {errors.full_name}
-                  </p>
-                )}
-              </div>
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="email"
+                  >
+                    Full Name <span className="text-red-500 ">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    name="full_name"
+                    value={updateFormData?.full_name}
+                    onChange={handleInputChange}
+                    id="name"
+                    placeholder="Enter the Full Name"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.full_name && (
+                    <p className="mt-2 text-sm text-red-600">
+                      {errors.full_name}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-row justify-between space-x-4">
@@ -1102,7 +1097,7 @@ const User = () => {
               </div>
 
               <div className="flex flex-row justify-between space-x-4">
-               <div className="w-1/2">
+                <div className="w-1/2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="date"
@@ -1125,7 +1120,7 @@ const User = () => {
                     </p>
                   )}
                 </div>
-                
+
                 <div className="w-1/2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
@@ -1143,10 +1138,8 @@ const User = () => {
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
                   />
                 </div>
-                </div>
+              </div>
               <div className="flex flex-row justify-between space-x-4">
-
-                 
                 <div className="w-full">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
@@ -1216,17 +1209,6 @@ const User = () => {
                   >
                     Gender
                   </label>
-                  {/* <select
-                    name="gender"
-                    value={updateFormData?.gender || ""}
-                    onChange={handleInputChange}
-                    id="gender"
-                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select> */}
 
                   <Select
                     className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
@@ -1258,17 +1240,7 @@ const User = () => {
                   >
                     Marital Status
                   </label>
-                  {/* <select
-                    name="marital_status"
-                    value={updateFormData?.marital_status || ""}
-                    onChange={handleInputChange}
-                    id="marital-status"
-                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
-                  >
-                    <option value="">Select Marital Status</option>
-                    <option value="Married">Married</option>
-                    <option value="Unmarried">Unmarried</option>
-                  </select> */}
+
                   <Select
                     className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
                     placeholder="Select Marital Status"
@@ -1403,9 +1375,7 @@ const User = () => {
                 </div>
               </div>
 
-           
               <div className="flex flex-row justify-between space-x-4">
-     
                 <div className="w-1/2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
@@ -1435,7 +1405,6 @@ const User = () => {
                   </Select>
                 </div>
 
-
                 <div className="w-1/2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
@@ -1444,42 +1413,14 @@ const User = () => {
                     District
                   </label>
 
-                  {/* {updateFormData?.state === "Karnataka" ?
-                  
-                  (
-                    <Select
-                      className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
-                      placeholder="Select District"
-                      showSearch
-                      name="district"
-                      filterOption={(input, option) =>
-                        option.children
-                          .toLowerCase()
-                          .includes(input.toLowerCase())
-                      }
-                      value={updateFormData?.district || undefined}
-                      onChange={(value) =>
-                        handleAntInputDSelect("district", value)
-                      }
-                    >
-                      <Select.Option value="">Select District</Select.Option>
-                      {districts.map((district, index) => (
-                        <Select.Option key={index} value={district}>
-                          {district}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  ) :
-                  
-                  ( */}
-                    <Input
-                      type="text"
-                      name="district"
-                      value={updateFormData?.district}
-                      onChange={handleInputChange}
-                      placeholder="Enter District"
-                      className="w-full p-2 h-14 border rounded-md sm:text-lg text-sm bg-gray-50 border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                  <Input
+                    type="text"
+                    name="district"
+                    value={updateFormData?.district}
+                    onChange={handleInputChange}
+                    placeholder="Enter District"
+                    className="w-full p-2 h-14 border rounded-md sm:text-lg text-sm bg-gray-50 border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                  />
                   {/* )} */}
                 </div>
               </div>
@@ -1585,7 +1526,7 @@ const User = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex flex-row justify-between space-x-4">
                 <div className="w-1/2">
                   <label
@@ -1728,8 +1669,4 @@ const User = () => {
   );
 };
 
-
-
-
 export default User;
-

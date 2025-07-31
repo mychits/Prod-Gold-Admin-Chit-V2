@@ -37,6 +37,8 @@ import { RiMoneyRupeeCircleLine } from "react-icons/ri";
 import { FaHandshake } from "react-icons/fa";
 import { SiQuicklook } from "react-icons/si";
 import { BiTransfer } from "react-icons/bi";
+
+import { MdCancel } from "react-icons/md";
 const MenuSidebar = [
   {
     id: "$1",
@@ -65,9 +67,16 @@ const MenuSidebar = [
   },
   {
     id: ids.three,
-    title: "Customers ",
+    title: "Customers",
     icon: <IoIosPersonAdd />,
     link: "/user",
+  },
+  ,
+  {
+    id: "&*&",
+    title: "Unverified Customer",
+    icon: <MdCancel />,
+    link: "/un-approved-customer",
   },
   {
     id: "$4",

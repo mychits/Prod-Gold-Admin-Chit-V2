@@ -74,6 +74,7 @@ import QuickSearch from "../pages/QuickSearch";
 import BidWinner from "../pages/BidWinner";
 import TransferCustomer from "../pages/SoftTransferCustomer";
 import SoftTransferCustomer from "../pages/SoftTransferCustomer";
+import UnApprovedCustomer from "../pages/UnApprovedCustomer";
 const mainRoutes = createBrowserRouter([
   {
     path: "/",
@@ -157,6 +158,16 @@ const mainRoutes = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <User />
+      </ProtectedRoute>
+    ),
+  },
+  ,
+
+  {
+    path: "/un-approved-customer",
+    element: (
+      <ProtectedRoute>
+        <UnApprovedCustomer />
       </ProtectedRoute>
     ),
   },
