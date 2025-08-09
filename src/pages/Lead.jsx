@@ -86,20 +86,9 @@ const Lead = () => {
     fetchGroups();
   }, [reloadTrigger]);
 
-//     const handleAssignTask = (leadId) => {
-//   navigate("/task", { state: { leadId } }); // ✅ pass leadId
-// }
-
-const handleAssignTask = (lead) => {
-  navigate("/task", {
-    state: {
-      leadId: lead._id,
-      leadName: lead.lead_name,
-      leadType: lead.lead_type,
-      leadTypeName: lead.lead_type_name
-    }
-  });
-};
+    const handleAssignTask = (leadId) => {
+  navigate("/task", { state: { leadId } }); // ✅ pass leadId
+}
 
   useEffect(() => {
     const fetchLeads = async () => {
@@ -116,15 +105,14 @@ const handleAssignTask = (lead) => {
           lead_needs: group?.lead_needs,
           group_id: group?.group_id?.group_name,
           date: group?.createdAt.split("T")[0],
-          lead_type:
-            group.lead_type === "agent" ? "employee" : group?.lead_type,
+          lead_type: group.lead_type,
           note: group?.note,
           lead_type_name:
-            group.lead_type === "customer"
-              ? group?.lead_customer?.full_name
-              : group.lead_type === "agent"
-                ? group?.lead_agent?.name
-                : "",
+  group.lead_type === "customer"
+    ? group?.lead_customer?.full_name
+    : group.lead_type === "agent" || group.lead_type === "employee"
+      ? group?.lead_agent?.name
+      : "",
           action: (
             <div className="flex justify-center gap-2">
               <Dropdown
@@ -211,28 +199,28 @@ const handleAssignTask = (lead) => {
     fetchUsers();
   }, [reloadTrigger]);
 
-  useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const response = await api.get("/agent/get-agent");
-        setAgents(response.data);
-      } catch (error) {
-        console.error("Error fetching agent data:", error);
-      }
-    };
-    fetchAgents();
-  }, [reloadTrigger]);
-  //  useEffect(() => {
-  //   const fetchAgent = async () => {
+  // useEffect(() => {
+  //   const fetchAgents = async () => {
   //     try {
-  //       const response = await api.get("/agent/get");
-  //       setAgents(response?.data?.agent);
+  //       const response = await api.get("/agent/get-agent");
+  //       setAgents(response.data);
   //     } catch (error) {
   //       console.error("Error fetching agent data:", error);
   //     }
   //   };
-  //   fetchAgent();
+  //   fetchAgents();
   // }, [reloadTrigger]);
+   useEffect(() => {
+    const fetchAgent = async () => {
+      try {
+        const response = await api.get("/agent/get");
+        setAgents(response?.data?.agent);
+      } catch (error) {
+        console.error("Error fetching agent data:", error);
+      }
+    };
+    fetchAgent();
+  }, [reloadTrigger]);
   useEffect(() => {
     const fetchEmployee = async () => {
       try {
@@ -318,6 +306,9 @@ const handleAssignTask = (lead) => {
     }
 
     if (data.lead_type === "agent" && !data.lead_agent) {
+      newErrors.lead_agent = "Agent selection is required";
+    }
+     if (data.lead_type === "employee" && !data.lead_agent) {
       newErrors.lead_agent = "Agent selection is required";
     }
     if (!data.lead_needs.toString()) {
@@ -862,20 +853,7 @@ const handleAssignTask = (lead) => {
                 >
                   Lead Source Type <span className="text-red-500 ">*</span>
                 </label>
-                {/* <select
-                  name="lead_type"
-                  id="category"
-                  value={formData.lead_type}
-                  onChange={handleChange}
-                  required
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
-                >
-                  <option value="">Select Lead Source Type</option>
-                  <option value="social">Social Media</option>
-                  <option value="customer">Customer</option>
-                  <option value="agent">Employee</option>
-                  <option value="walkin">Walkin</option>
-                </select> */}
+           
                 <Select
                   className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
                   placeholder="Select Lead Source Type "
@@ -892,6 +870,7 @@ const handleAssignTask = (lead) => {
                     "Social Media",
                     "Customer",
                     "Agent",
+                    "Employee",
                     "Walkin",
                   ].map((lType) => (
                     <Select.Option key={lType} value={lType.toLowerCase()}>
@@ -914,21 +893,7 @@ const handleAssignTask = (lead) => {
                     >
                       Customers
                     </label>
-                    {/* <select
-                      name="lead_customer"
-                      id="category"
-                      value={formData.lead_customer}
-                      onChange={handleChange}
-                      required
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
-                    >
-                      <option value="">Select Customer</option>
-                      {users.map((user) => (
-                        <option key={user?._id} value={user?._id}>
-                          {user?.full_name}
-                        </option>
-                      ))}
-                    </select> */}
+                  
                     <Select
                       className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
                       placeholder="Select Or Search Customer"
@@ -970,21 +935,7 @@ const handleAssignTask = (lead) => {
                     >
                       Agent
                     </label>
-                    {/* <select
-                      name="lead_agent"
-                      id="category"
-                      value={formData.lead_agent}
-                      onChange={handleChange}
-                      required
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
-                    >
-                      <option value="">Select Agent</option>
-                      {agents.map((agent) => (
-                        <option key={agent._id} value={agent._id}>
-                          {agent.name}
-                        </option>
-                      ))}
-                    </select> */}
+                  
                     <Select
                       className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
                       placeholder="Select Or Search Agent"
@@ -1016,7 +967,7 @@ const handleAssignTask = (lead) => {
                   </div>
                 </>
               )}
-              {/* {formData.lead_type === "employee" && (
+              {formData.lead_type === "employee" && (
                 <>
                   <div className="w-full">
                     <label
@@ -1056,7 +1007,7 @@ const handleAssignTask = (lead) => {
                     )}
                   </div>
                 </>
-              )} */}
+              )}
               <div className="w-full">
                 <label
                   className="block mb-2 text-sm font-medium text-gray-900"
@@ -1450,7 +1401,7 @@ const handleAssignTask = (lead) => {
                   </div>
                 </>
               )}
-              {/* {updateFormData.lead_type === "employee" && (
+              {updateFormData.lead_type === "employee" && (
                 <>
                   <div className="w-full">
                     <label
@@ -1490,7 +1441,7 @@ const handleAssignTask = (lead) => {
                     )}
                   </div>
                 </>
-              )} */}
+              )}
               <label
                 className="block mb-2 text-sm font-medium text-gray-900"
                 htmlFor="date"
