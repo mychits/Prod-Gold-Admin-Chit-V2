@@ -37,7 +37,7 @@ import { RiMoneyRupeeCircleLine } from "react-icons/ri";
 import { FaHandshake } from "react-icons/fa";
 import { SiQuicklook } from "react-icons/si";
 import { BiTransfer } from "react-icons/bi";
-
+import { FaMobileAlt } from "react-icons/fa";
 import { MdCancel } from "react-icons/md";
 const MenuSidebar = [
   {
@@ -84,10 +84,11 @@ const MenuSidebar = [
     icon: <FaPeopleArrows />,
     link: "/enrollment",
   },
+  
   {
     id: "$83",
     title: "Mobile Enrollments ",
-    icon: <FaPeopleArrows />,
+    icon: <FaMobileAlt />,
     link: "/mobile-app-enroll",
   },
   {
