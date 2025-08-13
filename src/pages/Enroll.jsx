@@ -527,11 +527,12 @@ const Enroll = () => {
   const handleRemoveGroup = async () => {
     if (currentGroup) {
        const user_id = currentGroup.user_id?._id
+       if(user_id){
       try {
         await api.delete(`/enroll/remove-enroll/${currentGroup._id}`, {
           user_id,
-          removed_by: admin,
-          removed_at: new Date(),
+          deleted_by: admin,
+          deleted_at: new Date(),
           removalReason,
         });
         setRemovalReason("")
@@ -546,6 +547,7 @@ const Enroll = () => {
         setRemovalReason("")
         console.error("Error deleting group:", error);
       }
+    }
     }
   };
 
