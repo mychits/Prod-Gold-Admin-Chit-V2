@@ -318,6 +318,7 @@ const selectednewGroup =
                   <DataTable
   data={filteredTableData}
   columns={Auctioncolumns}
+  exportCols={ExcelColumns}
   exportedPdfName={`All Customer Report`}
   printHeaderKeys={[
     "From Date",
