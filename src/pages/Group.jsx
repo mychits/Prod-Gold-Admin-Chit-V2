@@ -53,8 +53,11 @@ const Group = () => {
     group_commission: "5",
     incentives: "1",
     reg_fee: "",
+    monthly_installment: "",
+    relationship_manager: "",
   });
   const [errors, setErrors] = useState({});
+  const [employees, setEmployees] = useState([]);
   const [updateFormData, setUpdateFormData] = useState({
     group_name: "",
     group_type: "",
@@ -70,7 +73,22 @@ const Group = () => {
     group_commission: "",
     incentives: "",
     reg_fee: "",
+    monthly_installment: "",
+    relationship_manager: "",
   });
+  useEffect(() => {
+    async function getEmployees() {
+      try {
+        const response = await api.get("/agent/get-employee");
+        const responseData = response.data?.employee;
+        setEmployees(responseData ? responseData : []);
+      } catch (error) {
+        setEmployees([]);
+        console.log("Error Fetching Employees");
+      }
+    }
+    getEmployees();
+  }, []);
   useEffect(() => {
     const fetchGroups = async () => {
       try {
@@ -86,6 +104,7 @@ const Group = () => {
             group?.group_type.slice(1) +
             " Group",
           value: group?.group_value,
+          monthly_installment: group.monthly_installment,
           installment: group.group_install,
           members: group?.group_members,
           date: group?.createdAt,
@@ -214,7 +233,12 @@ const Group = () => {
       newErrors.group_members =
         "Group Members must be greater than zero (no symbols).";
     }
-
+    if (!data.relationship_manager) {
+      newErrors.group_members = "Relationship Manager is required";
+    }
+    if (!data.monthly_installment) {
+      newErrors.monthly_installment = "Monthly Installment is required";
+    }
     if (!data.group_duration) {
       newErrors.group_duration = "Group Duration is required";
     } else if (
@@ -308,6 +332,9 @@ const Group = () => {
           minimum_bid: "",
           maximum_bid: "",
           commission: "",
+          incentives: "",
+          relationship_manager: "",
+          monthly_installment: "",
         });
       } else {
         console.log(errors);
@@ -353,6 +380,9 @@ const Group = () => {
         group_commission: response?.data?.group_commission,
         incentives: response?.data?.incentives,
         reg_fee: response?.data?.reg_fee,
+        incentives: response?.data?.reg_fee,
+        relationship_manager: response?.data?.relationship_manager,
+        monthly_installment: response?.data?.monthly_installment,
       });
       setShowModalUpdate(true);
       setErrors({});
@@ -438,8 +468,10 @@ const Group = () => {
     { key: "name", header: "Group Name" },
     { key: "type", header: "Group Type" },
     { key: "value", header: "Group Value" },
-    { key: "installment", header: "Group Installment" },
     { key: "members", header: "Group Members" },
+    { key: "installment", header: "Group Installment" },
+    { key: "monthly_installment", header: "Monthly Installment" },
+    { key: "relationship_manager", header: "Relationship Manager" },
     { key: "action", header: "Action" },
   ];
 
@@ -562,6 +594,41 @@ const Group = () => {
                   </p>
                 )}
               </div>
+              <div className="w-full">
+                <label
+                  className="block mb-2 text-sm font-medium text-gray-900"
+                  htmlFor="category"
+                >
+                  Relationship Manager <span className="text-red-500 ">*</span>
+                </label>
+                <Select
+                  className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                  placeholder="Select or Search Group Type"
+                  popupMatchSelectWidth={false}
+                  showSearch
+                  name="relationship_manager"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                  value={formData?.relationship_manager || undefined}
+                  onChange={(value) =>
+                    handleAntDSelect("relationship_manager", value)
+                  }
+                >
+                  {(Array.isArray(employees) ? employees : []).map(
+                    (employee) => (
+                      <Select.Option key={employee?._id} value={employee?._id}>
+                        {employee?.name} | {employee?.phone_number}
+                      </Select.Option>
+                    )
+                  )}
+                </Select>
+                {errors.group_type && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.group_type}
+                  </p>
+                )}
+              </div>
               <div className="flex flex-row justify-between space-x-4">
                 <div className="w-1/2">
                   <label
@@ -660,7 +727,30 @@ const Group = () => {
                 </div>
               </div>
               <div className="flex flex-row justify-between space-x-4">
-                <div className="w-full">
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="monthly_install"
+                  >
+                    Monthly Installment <span className="text-red-500 ">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="monthly_installment"
+                    value={formData.monthly_installment}
+                    onChange={handleChange}
+                    id="monthly_install"
+                    placeholder="Enter Monthly Installment"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.monthly_installment && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.start_date}
+                    </p>
+                  )}
+                </div>
+                <div className="w-1/2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="date"
@@ -783,7 +873,7 @@ const Group = () => {
               <div className="flex flex-row justify-between space-x-4">
                 <div className="w-1/2">
                   <label className="block mb-2 text-sm font-medium text-gray-900">
-                    Employee Commission %
+                    Agent Commission %
                   </label>
                   <input
                     type="number"
@@ -797,7 +887,7 @@ const Group = () => {
 
                 <div className="w-1/2">
                   <label className="block mb-2 text-sm font-medium text-gray-900">
-                    Commission %
+                    Company Commission %
                   </label>
                   <input
                     type="number"
@@ -811,7 +901,7 @@ const Group = () => {
 
                 <div className="w-1/2">
                   <label className="block mb-2 text-sm font-medium text-gray-900">
-                    Incentives %
+                    Employee Incentives %
                   </label>
                   <input
                     type="text"
@@ -902,7 +992,41 @@ const Group = () => {
                   </p>
                 )}
               </div>
-
+              <div className="w-full">
+                <label
+                  className="block mb-2 text-sm font-medium text-gray-900"
+                  htmlFor="category"
+                >
+                  Relationship Manager <span className="text-red-500 ">*</span>
+                </label>
+                <Select
+                  className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                  placeholder="Select or Search Group Type"
+                  popupMatchSelectWidth={false}
+                  showSearch
+                  name="relationship_manager"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                  value={updateFormData?.relationship_manager || undefined}
+                  onChange={(value) =>
+                    handleAntInputDSelect("relationship_manager", value)
+                  }
+                >
+                  {(Array.isArray(employees) ? employees : []).map(
+                    (employee) => (
+                      <Select.Option key={employee?._id} value={employee?._id}>
+                        {employee?.name} | {employee?.phone_number}
+                      </Select.Option>
+                    )
+                  )}
+                </Select>
+                {errors.group_type && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.group_type}
+                  </p>
+                )}
+              </div>
               <div className="flex flex-row justify-between space-x-4">
                 <div className="w-1/2">
                   <label
@@ -1000,26 +1124,53 @@ const Group = () => {
                   )}
                 </div>
               </div>
-              <div>
-                <label
-                  className="block mb-2 text-sm font-medium text-gray-900"
-                  htmlFor="email"
-                >
-                  Registration Fee <span className="text-red-500 ">*</span>
-                </label>
-                <input
-                  type="number"
-                  name="reg_fee"
-                  value={updateFormData.reg_fee}
-                  onChange={handleInputChange}
-                  id="name"
-                  placeholder="Enter the Registration Fee"
-                  required
-                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
-                />
-                {errors.reg_fee && (
-                  <p className="text-red-500 text-sm mt-1">{errors.reg_fee}</p>
-                )}
+              <div className="flex flex-row justify-between space-x-4">
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="monthly_install"
+                  >
+                    Monthly Installment <span className="text-red-500 ">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="monthly_installment"
+                    value={updateFormData.monthly_installment}
+                    onChange={handleChange}
+                    id="monthly_install"
+                    placeholder="Enter Monthly Installment"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.monthly_installment && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.start_date}
+                    </p>
+                  )}
+                </div>
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="email"
+                  >
+                    Registration Fee <span className="text-red-500 ">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="reg_fee"
+                    value={updateFormData.reg_fee}
+                    onChange={handleInputChange}
+                    id="name"
+                    placeholder="Enter the Registration Fee"
+                    required
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  />
+                  {errors.reg_fee && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.reg_fee}
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="flex flex-row justify-between space-x-4">
                 <div className="w-1/2">
@@ -1121,7 +1272,7 @@ const Group = () => {
               <div className="flex flex-row justify-between space-x-4">
                 <div className="w-1/2">
                   <label className="block mb-2 text-sm font-medium text-gray-900">
-                    Employee Commission %
+                    Agent Commission %
                   </label>
                   <input
                     type="number"
@@ -1135,7 +1286,7 @@ const Group = () => {
 
                 <div className="w-1/2">
                   <label className="block mb-2 text-sm font-medium text-gray-900">
-                    Commission %
+                    Company Commission %
                   </label>
                   <input
                     type="number"
@@ -1148,7 +1299,7 @@ const Group = () => {
                 </div>
                 <div className="w-1/2">
                   <label className="block mb-2 text-sm font-medium text-gray-900">
-                    Incentives
+                    Employee Incentives %
                   </label>
                   <input
                     type="text"
