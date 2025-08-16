@@ -105,7 +105,9 @@ const Group = () => {
             " Group",
           value: group?.group_value,
           monthly_installment: group.monthly_installment,
+          relationship_manager: group.relationship_manager,
           installment: group.group_install,
+          incentives: group.incentives,
           members: group?.group_members,
           date: group?.createdAt,
           action: (
@@ -380,7 +382,7 @@ const Group = () => {
         group_commission: response?.data?.group_commission,
         incentives: response?.data?.incentives,
         reg_fee: response?.data?.reg_fee,
-        incentives: response?.data?.reg_fee,
+       
         relationship_manager: response?.data?.relationship_manager,
         monthly_installment: response?.data?.monthly_installment,
       });
