@@ -206,8 +206,8 @@ const Auction = () => {
   const prevDate = (dateString) => {
     const date = new Date(dateString);
     date.setDate(date.getDate() - 10);
-    const options = { day: "numeric", month: "short", year: "numeric" };
-    return date.toLocaleDateString("en-US", options).replace(",", " ");
+   
+    return date.toISOString()?.split("T")[0]
   };
   const handleGroupAuctionChange = async (groupId) => {
     setSelectedAuctionGroup(groupId);
@@ -221,7 +221,7 @@ const Auction = () => {
           const formattedData = [
             {
               id: 1,
-              date: prevDate(response?.data[0]?.auction_date),
+              auction_date:prevDate(response?.data[0]?.auction_date),
               name: "Commencement",
               phone_number: "Commencement",
               ticket: "Commencement",
@@ -232,13 +232,12 @@ const Auction = () => {
             ...response.data.map((group, index) => ({
               _id: group._id,
               id: index + 2,
-              date: formatPayDate(group.auction_date),
+              auction_date: group.auction_date,
               name: group.user_id?.full_name,
               phone_number: group.user_id?.phone_number,
               ticket: group.ticket,
               bid_amount: parseInt(group.divident) + parseInt(group.commission),
               amount: group.win_amount,
-
               status: !group?.isPrized
                 ? "Un Prized"
                 : group?.isPrized === "true"
@@ -304,7 +303,7 @@ const Auction = () => {
 
   const columns = [
     { key: "id", header: "SL. NO" },
-    { key: "date", header: "Auction Date" },
+    { key: "auction_date", header: "Auction Date" },
     { key: "name", header: "Customer Name" },
     { key: "phone_number", header: "Customer Phone Number" },
     { key: "ticket", header: "Ticket" },
@@ -669,7 +668,7 @@ const Auction = () => {
                       value={formData.win_amount}
                       id="win_amount"
                       placeholder=""
-                     readOnly
+                      readOnly
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
                     />
                   </div>
