@@ -138,6 +138,9 @@ const Payment = () => {
   });
   // const [showPrintModal, setShowPrintModal] = useState(false);
   const [modifyPayment, setModifyPayment] = useState(false);
+   const [modifyMinMaxPaymentDate, setModifyMinMaxPaymentDate] = useState(false);
+  const now = new Date();
+  const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split("T")[0];
   // const [printDetails, setPrintDetails] = useState({
   //   customerName: "",
   //   groupName: "",
@@ -154,20 +157,24 @@ const Payment = () => {
     setShowUploadModal(false);
   };
 
-  useEffect(() => {
+useEffect(() => {
     const user = localStorage.getItem("user");
     const userObj = JSON.parse(user);
 
-    if (
-      userObj &&
-      userObj.admin_access_right_id?.access_permissions?.edit_payment
-    ) {
-      const isModify =
-        userObj.admin_access_right_id?.access_permissions?.edit_payment ===
-        "true"
-          ? true
-          : false;
-      setModifyPayment(isModify);
+    if (userObj) {
+      // Check for admin access rights
+      const adminAccessPermissions = userObj.admin_access_right_id?.access_permissions;
+
+      // Set modifyPayment for admin users with the edit_payment permission
+      if (adminAccessPermissions?.edit_payment === "true") {
+        setModifyPayment(true); // Admin can modify payment date
+      }
+
+      // Set modifyPayment and modifyMinMaxPaymentDate for users with limited access
+      if (adminAccessPermissions?.edit_limited_payment === "true") {
+        setModifyPayment(true); // Limited users can modify payment date
+        setModifyMinMaxPaymentDate(true); // Limited users have min/max date restrictions
+      }
     }
   }, []);
   useEffect(() => {
@@ -1288,10 +1295,12 @@ const Payment = () => {
                       >
                         Payment Date
                       </label>
-                      <input
+                     <input
                         disabled={!modifyPayment}
                         type="date"
                         name="pay_date"
+                        min={modifyMinMaxPaymentDate ? yesterday:undefined}
+                        max={modifyMinMaxPaymentDate ? today:undefined}
                         value={formData.pay_date}
                         id="pay_date"
                         onChange={handleChange}
@@ -1672,8 +1681,11 @@ const Payment = () => {
                         Payment Date
                       </label>
                       <input
+                        disabled={!modifyPayment}
                         type="date"
                         name="pay_date"
+                        min={modifyMinMaxPaymentDate ? yesterday:undefined}
+                        max={modifyMinMaxPaymentDate ? today:undefined}
                         id="pay_date"
                         value={
                           updateFormData?.pay_date &&

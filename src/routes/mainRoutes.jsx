@@ -81,6 +81,7 @@ import MobileAppEnroll from "../pages/MobileAppEnroll";
 import PaymentLinkMenu from "../pages/PaymentLinkMenu";
 import ChitBulkPaymentLink from "../pages/BulkChitPaymentLink";
 import IndividualChitPaymentLink from "../pages/IndividualChitPaymentLink";
+import CollectionAreaMapping from "../pages/CollectionAreaMapping";
 const mainRoutes = createBrowserRouter([
   {
     path: "/",
@@ -122,6 +123,14 @@ const mainRoutes = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Group />
+      </ProtectedRoute>
+    ),
+  },
+   {
+    path: "/collection-area-mapping",
+    element: (
+      <ProtectedRoute>
+        <CollectionAreaMapping />
       </ProtectedRoute>
     ),
   },

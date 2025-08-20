@@ -469,7 +469,7 @@ const UserReport = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const response = await api.get(`/payment/get-report-daybook`, {
+        const response = await api.get(`/payment/get-customer-history`, {
           params: {
             pay_date: selectedDate,
             groupId: selectedAuctionGroupId,
@@ -591,34 +591,33 @@ const UserReport = () => {
                 referred_type: group?.enrollment?.referred_type || "N/A",
                 referrer_name: group?.enrollment?.referrer_name || "N/A",
                 customer_status: group?.enrollment?.customer_status || "N/A",
-                removal_reason : group?.enrollment?.removal_reason || "N/A"
+                removal_reason : group?.enrollment?.removal_reason || "N/A",
+               
               };
             })
             .filter((item) => item !== null);
 
           setTableAuctions(formattedData);
           setCommission(0);
-
-          const totalToBePaidAmount = formattedData.reduce((sum, group) => {
+         console.info(formattedData, "test");
+          const totalToBePaidAmount = formattedData.filter(summary=>summary.customer_status==="Active").reduce((sum, group) => {
             return sum + (group?.totalBePaid || 0);
           }, 0);
           setTotalToBePaid(totalToBePaidAmount);
 
-          const totalNetToBePaidAmount = formattedData.reduce((sum, group) => {
+          const totalNetToBePaidAmount = formattedData.filter(summary=>summary.customer_status==="Active").reduce((sum, group) => {
             return sum + (group?.toBePaidAmount || 0);
           }, 0);
           setNetTotalProfit(totalNetToBePaidAmount);
 
-          const totalPaidAmount = response.data.reduce(
-            (sum, group) => sum + (group?.payments?.totalPaidAmount || 0),
-            0
-          );
+          const totalPaidAmount = formattedData
+  .filter(summary => summary.customer_status === "Active")
+  .reduce((sum, group) => sum + (group?.paidAmount || 0), 0);
           setTotalPaid(totalPaidAmount);
 
-          const totalProfit = response.data.reduce(
-            (sum, group) => sum + (group?.profit?.totalProfit || 0),
-            0
-          );
+          const totalProfit = formattedData
+  .filter(summary => summary.customer_status === "Active")
+  .reduce((sum, group) => sum + (group?.profit || 0), 0);
           setTotalProfit(totalProfit);
         } else {
           setFilteredAuction([]);
