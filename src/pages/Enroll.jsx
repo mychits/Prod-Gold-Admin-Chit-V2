@@ -440,6 +440,7 @@ const Enroll = () => {
         referred_lead,
         chit_asking_month,
         email_id,
+        created_by
       } = formData;
       const ticketsCount = parseInt(no_of_tickets, 10);
       const ticketEntries = availableTicketsAdd
@@ -456,6 +457,7 @@ const Enroll = () => {
           chit_asking_month: Number(chit_asking_month),
           tickets: ticketNumber,
           email_id,
+          created_by
         }));
 
       try {
