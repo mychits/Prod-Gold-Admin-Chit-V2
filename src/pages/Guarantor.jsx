@@ -828,71 +828,134 @@ const validateForm = (type) => {
     }
   };
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const fmData = new FormData();
+  // const handleUpdate = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     const fmData = new FormData();
 
-      // append all fields from updateFormData
-      // Object.entries(updateFormData).forEach(([key, value]) => {
-      //   if (value) fmData.append(key, value);
-      // });
+  //     // append all fields from updateFormData
+  //     // Object.entries(updateFormData).forEach(([key, value]) => {
+  //     //   if (value) fmData.append(key, value);
+  //     // });
 
-      const { guarantor_all_document, ...rest } = updateFormData;
+  //     const { guarantor_all_document, ...rest } = updateFormData;
 
-      // Append non-file fields and existing URLs
-      Object.entries(rest).forEach(([key, value]) => {
-        if (value) fmData.append(key, value);
-      });
+  //     // Append non-file fields and existing URLs
+  //     Object.entries(rest).forEach(([key, value]) => {
+  //       if (value) fmData.append(key, value);
+  //     });
 
-      // Append new files only if they are of type 'File'
-      if (updateFormData.guarantor_photo instanceof File) {
-        fmData.append("guarantor_photo", updateFormData.guarantor_photo);
+  //     // Append new files only if they are of type 'File'
+  //     if (updateFormData.guarantor_photo instanceof File) {
+  //       fmData.append("guarantor_photo", updateFormData.guarantor_photo);
+  //     }
+  //     // Repeat this logic for all other single file fields...
+  //     if (updateFormData.guarantor_aadhar_document instanceof File) {
+  //       fmData.append(
+  //         "guarantor_aadhar_document",
+  //         updateFormData.guarantor_aadhar_document
+  //       );
+  //     }
+
+  //     if (extraDocs && Array.isArray(extraDocs)) {
+  //       extraDocs.forEach((doc, i) => {
+  //         // Check if the item has a file and it's a new file object
+  //         if (doc.file instanceof File) {
+  //           fmData.append("guarantor_all_document", doc.file);
+  //           fmData.append(
+  //             "guarantor_all_document",
+  //             doc.document_name || `Doc_${i + 1}`
+  //           );
+  //         }
+  //       });
+  //     }
+  //     await api.put(
+  //       `/guarantor/update-guarantor-info/${currentUpdateGuarantor?._id}`,
+  //       fmData,
+  //       {
+  //         headers: { "Content-Type": "multipart/form-data" },
+  //       }
+  //     );
+
+  //     setShowModalUpdate(false);
+  //     setReloadTrigger((prev) => prev + 1);
+  //     setAlertConfig({
+  //       type: "success",
+  //       message: "Guarantor Updated Successfully",
+  //       visibility: true,
+  //     });
+  //   } catch (error) {
+  //     console.error("Error updating Guarantor:", error);
+  //     setAlertConfig({
+  //       type: "error",
+  //       message: error?.response?.data?.message || "Update failed",
+  //       visibility: true,
+  //     });
+  //   }
+  // };
+const handleUpdate = async (e) => {
+  e.preventDefault();
+  try {
+    const fmData = new FormData();
+
+    const { guarantor_all_document, ...rest } = updateFormData;
+
+    // Append non-file fields
+    Object.entries(rest).forEach(([key, value]) => {
+      if (value) fmData.append(key, value);
+    });
+
+    // Handle single file fields
+    const singleFileFields = [
+      "guarantor_photo",
+      "guarantor_aadhar_document",
+      "guarantor_pan_document",
+      "guarantor_income_document",
+      "guarantor_bank_passbook_photo",
+      "guarantor_document",
+    ];
+
+    singleFileFields.forEach((field) => {
+      if (updateFormData[field] instanceof File) {
+        fmData.append(field, updateFormData[field]);
       }
-      // Repeat this logic for all other single file fields...
-      if (updateFormData.guarantor_aadhar_document instanceof File) {
-        fmData.append(
-          "guarantor_aadhar_document",
-          updateFormData.guarantor_aadhar_document
-        );
-      }
+    });
 
-      if (extraDocs && Array.isArray(extraDocs)) {
-        extraDocs.forEach((doc, i) => {
-          // Check if the item has a file and it's a new file object
-          if (doc.file instanceof File) {
-            fmData.append("guarantor_all_document", doc.file);
-            fmData.append(
-              "guarantor_all_document",
-              doc.document_name || `Doc_${i + 1}`
-            );
-          }
-        });
-      }
-      await api.put(
-        `/guarantor/update-guarantor-info/${currentUpdateGuarantor?._id}`,
-        fmData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
+    // Handle multiple extra docs
+    if (extraDocs && Array.isArray(extraDocs)) {
+      extraDocs.forEach((doc, i) => {
+        if (doc.file instanceof File) {
+          fmData.append("guarantor_all_document", doc.file); // file
+          fmData.append(
+            "document_name[]", // ✅ send as array
+            doc.document_name || `Document_${i + 1}`
+          );
         }
-      );
-
-      setShowModalUpdate(false);
-      setReloadTrigger((prev) => prev + 1);
-      setAlertConfig({
-        type: "success",
-        message: "Guarantor Updated Successfully",
-        visibility: true,
-      });
-    } catch (error) {
-      console.error("Error updating Guarantor:", error);
-      setAlertConfig({
-        type: "error",
-        message: error?.response?.data?.message || "Update failed",
-        visibility: true,
       });
     }
-  };
+
+    await api.put(
+      `/guarantor/update-guarantor-info/${currentUpdateGuarantor?._id}`,
+      fmData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    setShowModalUpdate(false);
+    setReloadTrigger((prev) => prev + 1);
+    setAlertConfig({
+      type: "success",
+      message: "Guarantor Updated Successfully",
+      visibility: true,
+    });
+  } catch (error) {
+    console.error("Error updating Guarantor:", error);
+    setAlertConfig({
+      type: "error",
+      message: error?.response?.data?.message || "Update failed",
+      visibility: true,
+    });
+  }
+};
 
   const columns = [
     { key: "id", header: "SL. NO" },
