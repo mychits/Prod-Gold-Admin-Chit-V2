@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Navbar from "../components/layouts/Navbar";
 import SettingSidebar from "../components/layouts/SettingSidebar";
 import api from "../instance/TokenInstance";
-import Modal from "../components/modals/Modal";
 import DataTable from "../components/layouts/Datatable";
-import { Dropdown } from "antd";
-import { IoMdMore } from "react-icons/io";
+import { Dropdown, Drawer } from "antd";
+import { IoMdMore, IoMdAdd, IoMdClose } from "react-icons/io";
 import CustomAlertDialog from "../components/alerts/CustomAlertDialog";
-import Loader from "../components/loaders/CircularLoader"; // Add this import for loader component
+import Loader from "../components/loaders/CircularLoader";
 
 const today = new Date();
 const currentYear = today.getFullYear();
@@ -22,8 +21,18 @@ function formatDate(date) {
 }
 
 const monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const Target = () => {
@@ -32,18 +41,18 @@ const Target = () => {
   const [agents, setAgents] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [tableData, setTableData] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
     visibility: false,
     message: "",
     type: "",
   });
-  const [loading, setLoading] = useState(false);
   const [initialDataLoading, setInitialDataLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isBulkMode, setIsBulkMode] = useState(false);
   const [editTargetId, setEditTargetId] = useState(null);
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedDate, setSelectedDate] = useState(currentYearMonth);
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [reload, setReload] = useState(0);
   const [targetData, setTargetData] = useState([]);
@@ -59,9 +68,42 @@ const Target = () => {
     September: 0,
     October: 0,
     November: 0,
-    December: 0
+    December: 0,
   });
   const [targetExists, setTargetExists] = useState(false);
+  const [fetchedTargetData, setFetchedTargetData] = useState(null);
+
+  const alertShownRef = useRef({
+    agents: false,
+    targets: false,
+  });
+
+  // Parse the date string in YYYY-MM format to get year and month
+  const parseDate = (dateString) => {
+    const [year, month] = dateString.split("-");
+    return {
+      year,
+      month: String(parseInt(month)).padStart(2, "0"),
+      monthName: monthNames[parseInt(month) - 1],
+    };
+  };
+
+  // Format date to YYYY-MM for the input value
+  const formatToYearMonth = (year, month) => {
+    return `${year}-${String(month).padStart(2, "0")}`;
+  };
+
+  // Generate the first and last day of the selected month
+  const getMonthDateRange = (dateString) => {
+    const { year, month } = parseDate(dateString);
+    const startDate = new Date(year, parseInt(month) - 1, 1);
+    const endDate = new Date(year, parseInt(month), 0);
+
+    return {
+      from_date: formatDate(startDate),
+      to_date: formatDate(endDate),
+    };
+  };
 
   // Fetch initial data (agents and employees)
   useEffect(() => {
@@ -70,7 +112,7 @@ const Target = () => {
       try {
         const [agentRes, employeeRes] = await Promise.all([
           api.get("/agent/get-agent"),
-          api.get("/agent/get-employee")
+          api.get("/agent/get-employee"),
         ]);
 
         const allAgents = agentRes.data || [];
@@ -81,13 +123,26 @@ const Target = () => {
         );
 
         setEmployees(employeeRes.data?.employee || []);
+
+        // Reset alert flags on successful load
+        alertShownRef.current.agents = false;
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setAlertConfig({
-          visibility: true,
-          message: "Failed to load agents and employees",
-          type: "error",
-        });
+        console.error("Error fetching agents/employees:", err);
+
+        // Only show alert once
+        if (!alertShownRef.current.agents) {
+          setAlertConfig({
+            visibility: true,
+            message: "Failed to load agents and employees",
+            type: "error",
+          });
+          alertShownRef.current.agents = true;
+
+          // Reset the flag after a delay to allow new alerts
+          setTimeout(() => {
+            alertShownRef.current.agents = false;
+          }, 3000);
+        }
       } finally {
         setInitialDataLoading(false);
       }
@@ -96,81 +151,99 @@ const Target = () => {
     fetchData();
   }, [reload]);
 
-  // Fetch targets data when type, year, or month changes
   useEffect(() => {
     const abortController = new AbortController();
+
+    setDataLoading(true);
+
     const fetchTargets = async () => {
-      setLoading(true);
       try {
-        const startDate = new Date(selectedYear, parseInt(selectedMonth) - 1, 1);
-        const endDate = new Date(selectedYear, parseInt(selectedMonth), 0);
+        const { from_date, to_date } = getMonthDateRange(selectedDate);
 
         let res;
         if (selectedType === "agents") {
           res = await api.get("/target/agents", {
             params: {
-              from_date: formatDate(startDate),
-              to_date: formatDate(endDate),
+              from_date,
+              to_date,
             },
             signal: abortController.signal,
           });
         } else {
           res = await api.get("/target/employee", {
             params: {
-              from_date: formatDate(startDate),
-              to_date: formatDate(endDate),
+              from_date,
+              to_date,
             },
-            signal: abortController.signal
+            signal: abortController.signal,
           });
         }
 
         if (res.data.success && res.data.summaries) {
           setTargetData(res.data.summaries);
+          alertShownRef.current.targets = false;
         } else {
           setTargetData([]);
         }
       } catch (err) {
-        if (err.name !== 'AbortError') {
+        if (err.name !== "AbortError") {
           console.error("Error fetching targets:", err);
-          setAlertConfig({
-            visibility: true,
-            message: "Failed to fetch targets",
-            type: "error",
-          });
+          if (!alertShownRef.current.targets) {
+            setAlertConfig({
+              visibility: true,
+              message: "Failed to fetch targets",
+              type: "error",
+            });
+            alertShownRef.current.targets = true;
+
+            setTimeout(() => {
+              alertShownRef.current.targets = false;
+            }, 3000);
+          }
           setTargetData([]);
         }
       } finally {
-        setLoading(false);
+        if(!abortController.signal.aborted){
+          setDataLoading(false);
+
+        }
       }
     };
 
-    fetchTargets();
+    if (!initialDataLoading) {
+      fetchTargets();
+    }
+
     return () => {
       abortController.abort();
     };
-  }, [selectedType, selectedYear, selectedMonth, reload]);
+  }, [selectedType, selectedDate, initialDataLoading, reload]);
 
   // Filter data on the frontend when selectedId changes
   useEffect(() => {
     if (targetData.length > 0) {
       let filteredData = targetData;
-      
+
       if (selectedId !== "all") {
         filteredData = targetData.filter(
           (item) => item.agent.id === selectedId
         );
       }
 
+      // Check if any target exists (single state update)
+      const anyTargetExists = filteredData.some(
+        (item) => item.agent.target.value !== "Not Set"
+      );
+      setTargetExists(anyTargetExists);
+
       const formattedData = filteredData.map((item) => {
         const hasTarget = item.agent.target.value !== "Not Set";
-        setTargetExists(hasTarget);
-        
-        const dropdownItems = hasTarget
-          ? [
-              { key: "update", label: "Edit Target" },
-              { key: "delete", label: "Delete Target" },
-            ]
-          : [{ key: "set", label: "Set Target" }];
+        const dropdownItems = [{ key: "update", label: "Edit Target" }];
+
+        // Add set target option only if no target exists
+        if (!hasTarget) {
+          dropdownItems.unshift({ key: "set", label: "Set Target" });
+        }
 
         const actionDropdown = (
           <Dropdown
@@ -178,9 +251,18 @@ const Target = () => {
             menu={{
               items: dropdownItems,
               onClick: ({ key }) => {
-                if (key === "set") openSetModal(item);
-                if (key === "update") openEditModal(item);
-                if (key === "delete") handleDeleteTarget(item.agent.id);
+                if (key === "set") {
+                  // Reset all mode flags to ensure individual mode
+                  setIsBulkMode(false);
+                  setIsEditMode(false);
+                  openSetDrawer(item);
+                }
+                if (key === "update") {
+                  // Reset all mode flags to ensure individual mode
+                  setIsBulkMode(false);
+                  setIsEditMode(true);
+                  openEditDrawer(item);
+                }
               },
             }}
           >
@@ -191,18 +273,8 @@ const Target = () => {
         return {
           name: item.agent.name,
           phone_number: item.agent.phone,
-          designation: item.agent.role,
+
           target: item.agent.target.value,
-          achieved_business: item.metrics.actual_business,
-          expected_business: item.metrics.expected_business,
-          remaining: item.metrics.target_remaining,
-          difference: item.metrics.target_difference,
-          incentive_percent: item.agent.target.achievement_percent,
-          incentive_amount: `₹${(
-            item.metrics.actual_business_digits * 0.01
-          ).toLocaleString()}`,
-          achieved_commission: item.metrics.total_actual,
-          expected_commission: item.metrics.total_estimated,
           action: actionDropdown,
           _item: item,
         };
@@ -214,11 +286,41 @@ const Target = () => {
     }
   }, [selectedId, targetData]);
 
-  const openSetModal = (item) => {
+  const fetchTargetDetails = async (item) => {
+    try {
+      const { year } = parseDate(selectedDate);
+
+      // Fetch detailed target data for this agent/year
+      const res = await api.get(`/target/agent/${item.agent.id}`, {
+        params: { year },
+      });
+
+      let monthData = null;
+
+      if (res.data && res.data.length > 0) {
+        // Get the month data
+        const target = res.data[0];
+        monthData = target.monthData || null;
+      }
+
+      setFetchedTargetData(monthData);
+      return monthData;
+    } catch (err) {
+      console.error("Error fetching target details:", err);
+      setFetchedTargetData(null);
+      return null;
+    }
+  };
+
+  const openSetDrawer = async (item) => {
     setSelectedPerson(item);
     setIsEditMode(false);
+    setIsBulkMode(false); // Explicitly set to individual mode
     setEditTargetId(item.agent.id);
-    
+
+    // Fetch target details first
+    const monthData = await fetchTargetDetails(item);
+
     // Initialize month values
     const monthValues = {
       January: 0,
@@ -232,54 +334,96 @@ const Target = () => {
       September: 0,
       October: 0,
       November: 0,
-      December: 0
+      December: 0,
     };
-    
-    // If there's existing target data, populate the values
-    const targetItem = targetData.find(t => t.agent.id === item.agent.id);
-    if (targetItem && targetItem.targetMonth) {
-      Object.keys(monthValues).forEach(month => {
-        monthValues[month] = targetItem.targetMonth[month] || 0;
+
+    // If we have month data, populate the values
+    if (monthData) {
+      Object.keys(monthValues).forEach((month) => {
+        monthValues[month] = monthData[month] || 0;
       });
-      setTargetExists(true);
-    } else {
-      setTargetExists(false);
     }
-    
+
     setMonthValues(monthValues);
-    setModalVisible(true);
+    setDrawerVisible(true);
   };
 
-  const openEditModal = (item) => {
-    openSetModal(item); // Reuse the same logic as set modal
+  const openEditDrawer = async (item) => {
+    setSelectedPerson(item);
     setIsEditMode(true);
+    setIsBulkMode(false); // Explicitly set to individual mode
+    setEditTargetId(item.agent.id);
+
+    // Fetch target details first
+    const monthData = await fetchTargetDetails(item);
+
+    // Initialize month values
+    const monthValues = {
+      January: 0,
+      February: 0,
+      March: 0,
+      April: 0,
+      May: 0,
+      June: 0,
+      July: 0,
+      August: 0,
+      September: 0,
+      October: 0,
+      November: 0,
+      December: 0,
+    };
+
+    // If we have month data, populate the values
+    if (monthData) {
+      Object.keys(monthValues).forEach((month) => {
+        monthValues[month] = monthData[month] || 0;
+      });
+    }
+
+    setMonthValues(monthValues);
+    setDrawerVisible(true);
+  };
+
+  const openBulkDrawer = () => {
+    setIsBulkMode(true);
+    setIsEditMode(false);
+    setDrawerVisible(true);
+
+    // Initialize with zeros
+    setMonthValues({
+      January: 0,
+      February: 0,
+      March: 0,
+      April: 0,
+      May: 0,
+      June: 0,
+      July: 0,
+      August: 0,
+      September: 0,
+      October: 0,
+      November: 0,
+      December: 0,
+    });
   };
 
   const handleMonthChange = (month, value) => {
-    setMonthValues(prev => ({
+    setMonthValues((prev) => ({
       ...prev,
-      [month]: value === '' ? '' : Number(value)
+      [month]: value === "" ? "" : Number(value),
     }));
   };
 
   const handleDeleteTarget = async (id) => {
     try {
-      setLoading(true);
-      // For agents
-      if (selectedType === "agents") {
-        await api.delete(`/target/delete-target/${id}`);
-      }
-      // For employees
-      else if (selectedType === "employees") {
-        await api.delete(`/target/delete-employee-target/${id}`);
-      }
+      // Update the target with deleted: true
+      await api.patch(`/target/agent/${id}`, { deleted: true });
 
       setAlertConfig({
         visibility: true,
         message: "Target deleted successfully",
         type: "success",
       });
-      setReload(prev => prev + 1);
+      setReload((prev) => prev + 1);
     } catch (err) {
       console.error("Delete failed", err);
       setAlertConfig({
@@ -288,51 +432,62 @@ const Target = () => {
         type: "error",
       });
     } finally {
-      setLoading(false);
       setTimeout(() => {
-        setAlertConfig(prev => ({ ...prev, visibility: false }));
+        setAlertConfig((prev) => ({ ...prev, visibility: false }));
       }, 4000);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const payload = {
-        agentId: editTargetId,
-        year: selectedYear,
-        monthValues: monthValues
-      };
+      const { year } = parseDate(selectedDate);
 
-      // For agents
-      if (selectedType === "agents") {
-        await api.post(`/target/add-target`, payload);
-      }
-      // For employees
-      else if (selectedType === "employees") {
-        await api.post(`/target/add-employee-target`, payload);
+      if (isBulkMode) {
+        // Bulk update remains the same
+        const agentIds =
+          selectedType === "agents"
+            ? agents.map((a) => a._id)
+            : employees.map((e) => e._id);
+
+        await api.patch(`/target/bulk`, {
+          agentIds,
+          year,
+          monthValues,
+        });
+      } else {
+        // Individual update - now using agentId and year query param
+        await api.patch(
+          `/target/agent/${editTargetId}?year=${year}`,
+          monthValues
+        );
       }
 
+      // Success handling remains the same
       setAlertConfig({
         visibility: true,
-        message: isEditMode
+        message: isBulkMode
+          ? "Bulk targets updated successfully"
+          : isEditMode
           ? "Target updated successfully"
           : "Target set successfully",
         type: "success",
       });
-      setModalVisible(false);
-      setReload(prev => prev + 1);
+      setDrawerVisible(false);
+      setReload((prev) => prev + 1);
     } catch (err) {
+      // Error handling remains the same
       console.error("Submit failed", err);
       setAlertConfig({
         visibility: true,
-        message: isEditMode ? "Update failed" : "Add failed",
+        message: isBulkMode
+          ? "Bulk update failed"
+          : isEditMode
+          ? "Update failed"
+          : "Add failed",
         type: "error",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -340,28 +495,9 @@ const Target = () => {
     return [
       { key: "name", header: "Name" },
       { key: "phone_number", header: "Phone Number" },
-      { key: "designation", header: "Designation" },
       { key: "target", header: "Target" },
-      { key: "achieved_business", header: "Achieved Business" },
-      { key: "expected_business", header: "Expected Business" },
-      { key: "remaining", header: "Remaining" },
-      { key: "difference", header: "Difference" },
-      { key: "incentive_percent", header: "Incentive (%)" },
-      { key: "incentive_amount", header: "Incentive (₹)" },
-      { key: "achieved_commission", header: "Achieved Commission" },
-      { key: "expected_commission", header: "Expected Commission" },
       { key: "action", header: "Action" },
     ];
-  };
-
-  // Generate years for the year selector (current year and 5 years back)
-  const generateYears = () => {
-    const years = [];
-    const current = new Date().getFullYear();
-    for (let i = 0; i < 6; i++) {
-      years.push(current - i);
-    }
-    return years;
   };
 
   return (
@@ -373,14 +509,22 @@ const Target = () => {
           type={alertConfig.type}
           isVisible={alertConfig.visibility}
           message={alertConfig.message}
-          onClose={() =>
-            setAlertConfig((prev) => ({ ...prev, visibility: false }))
-          }
+          onClose={() => {
+            setAlertConfig((prev) => ({ ...prev, visibility: false }));
+          }}
         />
 
         <div className="flex-grow p-6">
-          <h1 className="text-2xl font-semibold mb-4">Targets Management</h1>
-          
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-semibold">Targets Management</h1>
+            <button
+              onClick={openBulkDrawer}
+              className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              <IoMdAdd className="mr-2" /> Bulk Update Targets
+            </button>
+          </div>
+
           {initialDataLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader />
@@ -447,109 +591,102 @@ const Target = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Year
+                    Target Month
                   </label>
-                  <select
-                    className="p-2 border rounded w-full min-w-[120px]"
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                  >
-                    {generateYears().map(year => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Month
-                  </label>
-                  <select
+                  <input
+                    type="month"
                     className="p-2 border rounded w-full min-w-[150px]"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                  >
-                    {monthNames.map((month, index) => (
-                      <option key={month} value={String(index + 1).padStart(2, '0')}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    max={formatToYearMonth(currentYear, currentMonth)}
+                  />
                 </div>
               </div>
 
               <div className="relative min-h-[200px]">
-                {loading ? (
+                {dataLoading && (
                   <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
                     <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
                   </div>
-                ) : (
-                  <DataTable
-                    data={tableData}
-                    columns={getColumns()}
-                    exportedPdfName="Target-Report"
-                    exportedFileName="Target-Report.csv"
-                  />
                 )}
+                <DataTable
+                  data={tableData}
+                  columns={getColumns()}
+                  exportedPdfName="Target-Report"
+                  exportedFileName="Target-Report.csv"
+                />
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Single Target Modal */}
-      <Modal
-        isVisible={modalVisible}
-        onClose={() => {
-          setModalVisible(false);
-          setIsEditMode(false);
-          setEditTargetId(null);
+      {/* Target Drawer */}
+      <Drawer
+        title={
+          <div className="flex justify-between items-center">
+            <span>
+              {isBulkMode
+                ? "Bulk Update Targets"
+                : isEditMode
+                ? "Edit Target"
+                : "Set Target"}
+            </span>
+            <button
+              onClick={() => setDrawerVisible(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <IoMdClose size={20} />
+            </button>
+          </div>
+        }
+        placement="right"
+        closable={false}
+        onClose={() => setDrawerVisible(false)}
+        open={drawerVisible}
+        width={500}
+        className="target-drawer"
+        styles={{
+          body: {
+            padding: 0,
+            overflow: "hidden",
+          },
+          header: {
+            borderBottom: "1px solid #f0f0f0",
+            padding: "16px 24px",
+          },
         }}
       >
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">
-            {isEditMode ? "Edit Target" : "Set Target"}
-          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {selectedPerson && (
+            {!isBulkMode && selectedPerson && (
               <div>
-                <label className="block font-medium">Target For</label>
-                <input
-                  type="text"
-                  value={selectedPerson.agent.name}
-                  disabled
-                  className="w-full p-2 border rounded bg-gray-100"
-                />
+                <label className="block font-medium mb-1">Target For</label>
+                <div className="w-full p-2 border rounded bg-gray-50">
+                  {selectedPerson.agent.name}
+                </div>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block font-medium">Year</label>
-                <input
-                  type="text"
-                  value={selectedYear}
-                  disabled
-                  className="w-full p-2 border rounded bg-gray-100"
-                />
+                <label className="block font-medium mb-1">Year</label>
+                <div className="w-full p-2 border rounded bg-gray-50">
+                  {parseDate(selectedDate).year}
+                </div>
               </div>
               <div>
-                <label className="block font-medium">Month</label>
-                <input
-                  type="text"
-                  value={monthNames[parseInt(selectedMonth) - 1]}
-                  disabled
-                  className="w-full p-2 border rounded bg-gray-100"
-                />
+                <label className="block font-medium mb-1">Month</label>
+                <div className="w-full p-2 border rounded bg-gray-50">
+                  {parseDate(selectedDate).monthName}
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {monthNames.map((month) => (
                 <div key={month}>
-                  <label className="block font-medium">{month}</label>
+                  <label className="block font-medium mb-1">{month}</label>
                   <div className="flex items-center">
                     <span className="mr-2">₹</span>
                     <input
@@ -559,56 +696,25 @@ const Target = () => {
                       className="w-full p-2 border rounded"
                       min="0"
                       placeholder={`Enter ${month} target`}
-                      disabled={loading}
                     />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="border p-3 rounded">
-                <div className="text-sm text-gray-500">Achieved Business</div>
-                <div className="font-bold">
-                  {selectedPerson?.metrics.actual_business || "₹0.00"}
-                </div>
-              </div>
-              <div className="border p-3 rounded">
-                <div className="text-sm text-gray-500">Remaining</div>
-                <div className="font-bold">
-                  {selectedPerson?.metrics.target_remaining || "₹0.00"}
-                </div>
-              </div>
-              <div className="border p-3 rounded">
-                <div className="text-sm text-gray-500">Achieved Commission</div>
-                <div className="font-bold">
-                  {selectedPerson?.metrics.total_actual || "₹0.00"}
-                </div>
-              </div>
-              <div className="border p-3 rounded">
-                <div className="text-sm text-gray-500">Expected Commission</div>
-                <div className="font-bold">
-                  {selectedPerson?.metrics.total_estimated || "₹0.00"}
-                </div>
-              </div>
-            </div>
-
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:bg-blue-400"
+              className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 mt-6"
             >
-              {loading
-                ? isEditMode
-                  ? "Updating..."
-                  : "Saving..."
+              {isBulkMode
+                ? "Update All Targets"
                 : isEditMode
                 ? "Update Target"
                 : "Save Target"}
             </button>
           </form>
         </div>
-      </Modal>
+      </Drawer>
     </>
   );
 };

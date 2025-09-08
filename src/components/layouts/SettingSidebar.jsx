@@ -80,20 +80,32 @@ const MenuSidebar = [
   },
 
   {
-    title: "Targets",
+    title: "Target Management",
     icon: <GoGraph />,
     submenu:true,
-    link: "/target",
+   
     submenuItems: [
       {
-        title: "Groups",
+        title: "Target",
+        icon: <MdOutlineGroups />,
+        link:"/target",
+       
+       
+      },
+       {
+        title: "Reports",
         icon: <MdOutlineGroups />,
         submenu: true,
         submenuItems: [
           {
-            title: "Mobile Access",
+            title: "Commission Report",
             icon: <MdAppSettingsAlt size={20} />,
-            link: "/lead-setting/app-settings/groups/mobile-access",
+            link: "/target-commission",
+          },
+            {
+            title: "Incentive Report",
+            icon: <MdAppSettingsAlt size={20} />,
+            link: "/target-incentive",
           },
           
         ],

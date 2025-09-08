@@ -83,7 +83,9 @@ import PaymentLinkMenu from "../pages/PaymentLinkMenu";
 import ChitBulkPaymentLink from "../pages/BulkChitPaymentLink";
 import IndividualChitPaymentLink from "../pages/IndividualChitPaymentLink";
 import CollectionAreaMapping from "../pages/CollectionAreaMapping";
-import IndividualRegistrationChitPaymentLink from "../pages/IndividualRegistrationChitPaymentLink"
+import IndividualRegistrationChitPaymentLink from "../pages/IndividualRegistrationChitPaymentLink";
+import TargetCommissionReport from "../pages/TargetCommission";
+import TargetIncentiveReport from "../pages/TargetIncentive";
 const mainRoutes = createBrowserRouter([
   {
     path: "/",
@@ -128,7 +130,7 @@ const mainRoutes = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-   {
+  {
     path: "/collection-area-mapping",
     element: (
       <ProtectedRoute>
@@ -168,7 +170,7 @@ const mainRoutes = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-   {
+  {
     path: "/pay-in-menu/payment-link-menu/chit-payment",
     element: (
       <ProtectedRoute>
@@ -176,7 +178,7 @@ const mainRoutes = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-   {
+  {
     path: "/pay-in-menu/payment-link-menu/registration-chit-payment",
     element: (
       <ProtectedRoute>
@@ -529,9 +531,18 @@ const mainRoutes = createBrowserRouter([
       { path: "enrollment-report", element: <EnrollmentReport /> },
       { path: "payment-summary", element: <PaymentSummary /> },
       {
-        path:"due-report", element:<DueReport/>
-      }
+        path: "due-report",
+        element: <DueReport />,
+      },
     ],
+  },
+  {
+    path: "/target-commission",
+    element: <TargetCommissionReport />,
+  },
+  {
+    path: "/target-incentive",
+    element: <TargetIncentiveReport />,
   },
   {
     path: "/print/:id",
