@@ -2,28 +2,26 @@ import React, { useState } from "react";
 import { BsArrowLeftShort, BsChevronDown } from "react-icons/bs";
 import { RiDashboardFill } from "react-icons/ri";
 import { SiGoogleanalytics } from "react-icons/si";
-import { TbCategoryPlus } from "react-icons/tb";
-import { IoIosPersonAdd } from "react-icons/io";
-import { BsCash } from "react-icons/bs";
-import { GrAnalytics } from "react-icons/gr";
 import { CgProfile } from "react-icons/cg";
-import { IoIosSettings } from "react-icons/io";
 import { IoIosHelpCircle } from "react-icons/io";
-import { RiAuctionLine } from "react-icons/ri";
-import { FaPeopleArrows, FaLayerGroup, FaUserLock } from "react-icons/fa";
 import { GiGoldBar } from "react-icons/gi";
 import { IoPeopleOutline } from "react-icons/io5";
 import { TiSpanner } from "react-icons/ti";
 import { RiAdminLine } from "react-icons/ri";
 import { MdOutlineGroups } from "react-icons/md";
 import { BsPersonCheck } from "react-icons/bs";
-import { GoGraph } from "react-icons/go";
 import { Link, useLocation } from "react-router-dom";
 import { AiOutlinePlus, AiOutlineMinus } from "react-icons/ai";
 import { MdAppSettingsAlt } from "react-icons/md";
 import { ImHappy } from "react-icons/im";
 import { FaPersonMilitaryPointing } from "react-icons/fa6";
-
+import { TbTargetArrow } from "react-icons/tb";
+import { LuTarget } from "react-icons/lu";
+import { BsFileBarGraph } from "react-icons/bs";
+import { TbGraph } from "react-icons/tb";
+import { TbGraphFilled } from "react-icons/tb";
+import { MdAccountBalanceWallet } from "react-icons/md";
+import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 const MenuSidebar = [
   { title: "Dashboard", icon: <RiDashboardFill />, link: "/dashboard" },
   {
@@ -81,33 +79,42 @@ const MenuSidebar = [
 
   {
     title: "Target Management",
-    icon: <GoGraph />,
-    submenu:true,
-   
+    icon: <LuTarget />,
+    submenu: true,
+
     submenuItems: [
       {
         title: "Target",
-        icon: <MdOutlineGroups />,
-        link:"/target",
-       
-       
+        icon: <TbTargetArrow />,
+        link: "/target",
       },
-       {
+      {
         title: "Reports",
-        icon: <MdOutlineGroups />,
+        icon: <BsFileBarGraph />,
         submenu: true,
         submenuItems: [
           {
             title: "Commission Report",
-            icon: <MdAppSettingsAlt size={20} />,
+            icon: <TbGraph size={20} />,
             link: "/target-commission",
           },
-            {
+          {
             title: "Incentive Report",
-            icon: <MdAppSettingsAlt size={20} />,
+            icon: <TbGraphFilled size={20} />,
             link: "/target-incentive",
           },
-          
+        ],
+      },
+      {
+        title: "Accounts",
+        icon: <MdAccountBalanceWallet  />,
+        submenu: true,
+        submenuItems: [
+          {
+            title: "PayOut",
+            icon: <RiMoneyRupeeCircleFill  size={20} />,
+            link: "/target-commission",
+          },
         ],
       },
     ],
@@ -125,7 +132,6 @@ const SettingSidebar = () => {
   const [open, setOpen] = useState(true);
   const location = useLocation();
 
-  // Store all expanded menu keys (e.g., '0', '0/0')
   const [expandedMenus, setExpandedMenus] = useState(new Set());
 
   const toggleExpand = (key) => {
@@ -141,34 +147,42 @@ const SettingSidebar = () => {
   const renderMenu = (items, level = 0, pathPrefix = "") => {
     return items.map((item, index) => {
       const key = pathPrefix ? `${pathPrefix}/${index}` : `${index}`;
+      const isSubmenu = level > 0;
+
+      const textSizeClass = "text-sm";
+      const titleFontSizeClass = isSubmenu
+        ? "text-sm font-normal"
+        : "text-base font-medium";
+      const iconSizeClass = isSubmenu ? "text-xl" : "text-2xl";
+      const paddingLeftClass = isSubmenu ? "pl-6 md:pl-8" : "";
 
       return (
         <div key={key} className={`${item.spacing ? "mt-9" : "mt-2"}`}>
           {item.submenu ? (
             <>
               <div
-                className={`text-gray-300 text-sm flex items-center justify-between gap-x-4 cursor-pointer p-2 ${
-                  level > 0 ? "pl-8" : ""
-                } hover:bg-light-white rounded-2xl`}
+                className={`text-gray-300 ${textSizeClass} ${paddingLeftClass} flex items-center justify-between gap-x-4 cursor-pointer p-2 hover:bg-light-white rounded-2xl`}
                 onClick={() => toggleExpand(key)}
               >
                 <div className="flex items-center gap-x-4">
-                  {item.icon && <span className="text-2xl">{item.icon}</span>}
+                  {item.icon && (
+                    <span className={iconSizeClass}>{item.icon}</span>
+                  )}
                   {open && (
-                    <span className="text-base font-medium">{item.title}</span>
+                    <span className={titleFontSizeClass}>{item.title}</span>
                   )}
                 </div>
                 {open && (
-                  <span className="text-xl">
+                  <span className={isSubmenu ? "text-sm" : "text-xl"}>
                     {item.title === "Groups" ? (
                       isExpanded(key) ? (
-                        <AiOutlineMinus size={15} />
+                        <AiOutlineMinus size={isSubmenu ? 14 : 16} />
                       ) : (
-                        <AiOutlinePlus size={15} />
+                        <AiOutlinePlus size={isSubmenu ? 14 : 16} />
                       )
                     ) : (
                       <BsChevronDown
-                        size={15}
+                        size={isSubmenu ? 14 : 16}
                         className={`transition-transform duration-200 ${
                           isExpanded(key) ? "rotate-180" : ""
                         }`}
@@ -178,7 +192,8 @@ const SettingSidebar = () => {
                 )}
               </div>
               {open && isExpanded(key) && item.submenuItems && (
-                <div className="ml-2">
+                <div className="ml-3 md:ml-4">
+                  {" "}
                   {renderMenu(item.submenuItems, level + 1, key)}
                 </div>
               )}
@@ -186,15 +201,15 @@ const SettingSidebar = () => {
           ) : (
             <Link to={item.link || "#"}>
               <div
-                className={`text-gray-300 text-sm flex items-center gap-x-4 cursor-pointer p-2 ${
-                  level > 0 ? "pl-8" : ""
-                } hover:bg-light-white rounded-2xl ${
+                className={`text-gray-300 ${textSizeClass} ${paddingLeftClass} flex items-center gap-x-4 cursor-pointer p-2 hover:bg-light-white rounded-2xl ${
                   location.pathname === item.link ? "bg-light-white" : ""
                 }`}
               >
-                {item.icon && <span className="text-2xl">{item.icon}</span>}
+                {item.icon && (
+                  <span className={iconSizeClass}>{item.icon}</span>
+                )}
                 {open && (
-                  <span className="text-base font-medium">{item.title}</span>
+                  <span className={titleFontSizeClass}>{item.title}</span>
                 )}
               </div>
             </Link>

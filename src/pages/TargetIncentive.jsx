@@ -48,8 +48,8 @@ const TargetIncentiveReport = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await api.get("/agent/get-agent");
-      setEmployees(res.data);
+      const res = await api.get("/agent/get-employee");
+      setEmployees(res.data?.employee);
     } catch (err) {
       console.error("Error fetching employees:", err);
     }
@@ -377,7 +377,7 @@ const TargetIncentiveReport = () => {
             Reports - Commission
           </h1>
 
-          <div className="mt-6 mb-8">
+          <div className="mt-11 mb-8">
             <div className="mb-2">
               <div className="flex justify-center items-center w-full gap-4 bg-blue-50 p-2 w-30 h-40 rounded-3xl border   space-x-2">
                 <div className="mb-2">

@@ -46,8 +46,8 @@ const TargetCommissionReport = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await api.get("/agent/get-agent");
-      setEmployees(res.data);
+      const res = await api.get("/agent/get");
+      setEmployees(res?.data?.agent);
     } catch (err) {
       console.error("Error fetching employees:", err);
     }
@@ -55,26 +55,34 @@ const TargetCommissionReport = () => {
 
   const fetchCommissionReport = async (employeeId) => {
     if (!employeeId) return;
+    const abortController = new AbortController();
     setLoading(true);
     try {
       const res = await api.get("/enroll/get-detailed-commission-per-month", {
         params: { agent_id: employeeId, from_date: fromDate, to_date: toDate },
+        signal: abortController.signal,
       });
       setEmployeeCustomerData(res.data?.commission_data);
       setCommissionTotalDetails(res.data?.summary);
     } catch (err) {
-      console.error("Error fetching employee report:", err);
-      setEmployeeCustomerData([]);
-      setCommissionTotalDetails({});
+      if (err.name !== "AbortController") {
+        console.error("Error fetching employee report:", err);
+        setEmployeeCustomerData([]);
+        setCommissionTotalDetails({});
+      }
     } finally {
-      setLoading(false);
+      if (!abortController.signal.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   const fetchTargetData = async (employeeId) => {
     try {
+      const abortController = new AbortController();
       const targetRes = await api.get("/target/get-targets", {
         params: { fromDate, toDate, agentId: employeeId },
+        signal:abortController.signal
       });
 
       const rawTargets = targetRes.data || [];
@@ -85,6 +93,7 @@ const TargetCommissionReport = () => {
         const date = new Date(t.startDate);
         const key = `${date.getFullYear()}-${date.getMonth()}`;
         if (!monthMap[key]) monthMap[key] = t.totalTarget || 0;
+
       });
 
       const defaultTarget = Object.values(monthMap)[0] || 0;
@@ -112,6 +121,7 @@ const TargetCommissionReport = () => {
             from_date: fromDate,
             to_date: toDate,
           },
+          signal:abortController.abort
         }
       );
 
@@ -160,6 +170,7 @@ const TargetCommissionReport = () => {
         incentivePercent,
       });
     } catch (err) {
+      if(err.name !== "AbortError"){
       console.error("Error fetching target data:", err);
       setTargetData({
         target: 0,
@@ -174,21 +185,29 @@ const TargetCommissionReport = () => {
       });
     }
   };
+}
 
   const fetchAllCommissionReport = async () => {
+    const abortController = new AbortController();
     setLoading(true);
     try {
       const res = await api.get("enroll/get-detailed-commission-all", {
         params: { from_date: fromDate, to_date: toDate },
+        signal:abortController.signal
       });
       setEmployeeCustomerData(res.data?.commission_data);
       setCommissionTotalDetails(res.data?.summary);
     } catch (err) {
+      if(err.name !== "AbortError"){
       console.error("Error fetching all commission report:", err);
       setEmployeeCustomerData([]);
       setCommissionTotalDetails({});
+      }
     } finally {
-      setLoading(false);
+      if(!abortController.signal.aborted){
+        setLoading(false);
+
+      }
     }
   };
 
@@ -352,19 +371,19 @@ const TargetCommissionReport = () => {
   return (
     <div className="w-screen min-h-screen">
       <div className="flex mt-30">
-        <SettingSidebar/>
+        <SettingSidebar />
         <Navbar visibility={true} />
         <div className="flex-grow p-7">
           <h1 className="text-2xl font-bold text-center ">
             Reports - Commission
           </h1>
 
-          <div className="mt-6 mb-8">
+          <div className="mt-11 mb-8">
             <div className="mb-2">
               <div className="flex justify-center items-center w-full gap-4 bg-blue-50 p-2 w-30 h-40 rounded-3xl border   space-x-2">
                 <div className="mb-2">
                   <label className="block text-lg text-gray-500 text-center font-semibold mb-2">
-                    Employee
+                    Agent
                   </label>
                   <Select
                     value={selectedEmployeeId || undefined}
@@ -886,5 +905,6 @@ const TargetCommissionReport = () => {
     </div>
   );
 };
+
 
 export default TargetCommissionReport;

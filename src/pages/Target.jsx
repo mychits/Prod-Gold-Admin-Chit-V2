@@ -78,7 +78,6 @@ const Target = () => {
     targets: false,
   });
 
-  // Parse the date string in YYYY-MM format to get year and month
   const parseDate = (dateString) => {
     const [year, month] = dateString.split("-");
     return {
@@ -88,12 +87,10 @@ const Target = () => {
     };
   };
 
-  // Format date to YYYY-MM for the input value
   const formatToYearMonth = (year, month) => {
     return `${year}-${String(month).padStart(2, "0")}`;
   };
 
-  // Generate the first and last day of the selected month
   const getMonthDateRange = (dateString) => {
     const { year, month } = parseDate(dateString);
     const startDate = new Date(year, parseInt(month) - 1, 1);
@@ -105,7 +102,6 @@ const Target = () => {
     };
   };
 
-  // Fetch initial data (agents and employees)
   useEffect(() => {
     const fetchData = async () => {
       setInitialDataLoading(true);
@@ -124,12 +120,10 @@ const Target = () => {
 
         setEmployees(employeeRes.data?.employee || []);
 
-        // Reset alert flags on successful load
         alertShownRef.current.agents = false;
       } catch (err) {
         console.error("Error fetching agents/employees:", err);
 
-        // Only show alert once
         if (!alertShownRef.current.agents) {
           setAlertConfig({
             visibility: true,
@@ -138,7 +132,6 @@ const Target = () => {
           });
           alertShownRef.current.agents = true;
 
-          // Reset the flag after a delay to allow new alerts
           setTimeout(() => {
             alertShownRef.current.agents = false;
           }, 3000);
@@ -203,9 +196,8 @@ const Target = () => {
           setTargetData([]);
         }
       } finally {
-        if(!abortController.signal.aborted){
+        if (!abortController.signal.aborted) {
           setDataLoading(false);
-
         }
       }
     };
@@ -219,18 +211,18 @@ const Target = () => {
     };
   }, [selectedType, selectedDate, initialDataLoading, reload]);
 
-  // Filter data on the frontend when selectedId changes
   useEffect(() => {
     if (targetData.length > 0) {
-      let filteredData = targetData;
 
+      let filteredData = targetData;
+      
       if (selectedId !== "all") {
         filteredData = targetData.filter(
           (item) => item.agent.id === selectedId
         );
       }
+    
 
-      // Check if any target exists (single state update)
       const anyTargetExists = filteredData.some(
         (item) => item.agent.target.value !== "Not Set"
       );
@@ -240,7 +232,6 @@ const Target = () => {
         const hasTarget = item.agent.target.value !== "Not Set";
         const dropdownItems = [{ key: "update", label: "Edit Target" }];
 
-        // Add set target option only if no target exists
         if (!hasTarget) {
           dropdownItems.unshift({ key: "set", label: "Set Target" });
         }
@@ -252,13 +243,11 @@ const Target = () => {
               items: dropdownItems,
               onClick: ({ key }) => {
                 if (key === "set") {
-                  // Reset all mode flags to ensure individual mode
                   setIsBulkMode(false);
                   setIsEditMode(false);
                   openSetDrawer(item);
                 }
                 if (key === "update") {
-                  // Reset all mode flags to ensure individual mode
                   setIsBulkMode(false);
                   setIsEditMode(true);
                   openEditDrawer(item);
@@ -273,8 +262,10 @@ const Target = () => {
         return {
           name: item.agent.name,
           phone_number: item.agent.phone,
-
-          target: item.agent.target.value,
+          actual_business:item?.metrics?.actual_business,
+          target_difference:item?.metrics?.target_difference,
+          target_remaining_digits:item?.metrics?.target_remaining_digits,
+          target: item.agent?.target?.value,
           action: actionDropdown,
           _item: item,
         };
@@ -290,7 +281,6 @@ const Target = () => {
     try {
       const { year } = parseDate(selectedDate);
 
-      // Fetch detailed target data for this agent/year
       const res = await api.get(`/target/agent/${item.agent.id}`, {
         params: { year },
       });
@@ -298,7 +288,6 @@ const Target = () => {
       let monthData = null;
 
       if (res.data && res.data.length > 0) {
-        // Get the month data
         const target = res.data[0];
         monthData = target.monthData || null;
       }
@@ -315,13 +304,11 @@ const Target = () => {
   const openSetDrawer = async (item) => {
     setSelectedPerson(item);
     setIsEditMode(false);
-    setIsBulkMode(false); // Explicitly set to individual mode
+    setIsBulkMode(false); 
     setEditTargetId(item.agent.id);
 
-    // Fetch target details first
     const monthData = await fetchTargetDetails(item);
 
-    // Initialize month values
     const monthValues = {
       January: 0,
       February: 0,
@@ -337,7 +324,6 @@ const Target = () => {
       December: 0,
     };
 
-    // If we have month data, populate the values
     if (monthData) {
       Object.keys(monthValues).forEach((month) => {
         monthValues[month] = monthData[month] || 0;
@@ -351,13 +337,11 @@ const Target = () => {
   const openEditDrawer = async (item) => {
     setSelectedPerson(item);
     setIsEditMode(true);
-    setIsBulkMode(false); // Explicitly set to individual mode
+    setIsBulkMode(false); 
     setEditTargetId(item.agent.id);
 
-    // Fetch target details first
     const monthData = await fetchTargetDetails(item);
 
-    // Initialize month values
     const monthValues = {
       January: 0,
       February: 0,
@@ -373,7 +357,6 @@ const Target = () => {
       December: 0,
     };
 
-    // If we have month data, populate the values
     if (monthData) {
       Object.keys(monthValues).forEach((month) => {
         monthValues[month] = monthData[month] || 0;
@@ -389,7 +372,6 @@ const Target = () => {
     setIsEditMode(false);
     setDrawerVisible(true);
 
-    // Initialize with zeros
     setMonthValues({
       January: 0,
       February: 0,
@@ -415,7 +397,6 @@ const Target = () => {
 
   const handleDeleteTarget = async (id) => {
     try {
-      // Update the target with deleted: true
       await api.patch(`/target/agent/${id}`, { deleted: true });
 
       setAlertConfig({
@@ -445,7 +426,6 @@ const Target = () => {
       const { year } = parseDate(selectedDate);
 
       if (isBulkMode) {
-        // Bulk update remains the same
         const agentIds =
           selectedType === "agents"
             ? agents.map((a) => a._id)
@@ -457,14 +437,12 @@ const Target = () => {
           monthValues,
         });
       } else {
-        // Individual update - now using agentId and year query param
         await api.patch(
           `/target/agent/${editTargetId}?year=${year}`,
           monthValues
         );
       }
 
-      // Success handling remains the same
       setAlertConfig({
         visibility: true,
         message: isBulkMode
@@ -477,7 +455,6 @@ const Target = () => {
       setDrawerVisible(false);
       setReload((prev) => prev + 1);
     } catch (err) {
-      // Error handling remains the same
       console.error("Submit failed", err);
       setAlertConfig({
         visibility: true,
@@ -490,12 +467,15 @@ const Target = () => {
       });
     }
   };
-
+ 
   const getColumns = () => {
     return [
       { key: "name", header: "Name" },
       { key: "phone_number", header: "Phone Number" },
       { key: "target", header: "Target" },
+      { key: "actual_business", header: "Actual Business" },
+      { key: "target_difference", header: "Target Difference" },
+      { key: "target_remaining_digits", header: "Target Remaining Digits" },
       { key: "action", header: "Action" },
     ];
   };
