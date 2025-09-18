@@ -30,6 +30,7 @@ const User = () => {
   const [districts, setDistricts] = useState([]);
   const [reloadTrigger, setReloadTrigger] = useState(0);
   const [collectionExecutive, setCollectionExecutive] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
     visibility: false,
     message: "Something went wrong!",
@@ -172,62 +173,73 @@ const User = () => {
                 trigger={["click"]}
                 menu={{
                   items: [
+                    // {
+                    //   key: "1",
+                    //   label: (
+                    //     <div
+                    //       className="text-green-600"
+                    //       onClick={() => handleUpdateModalOpen(group?._id)}
+                    //     >
+                    //       Edit
+                    //     </div>
+                    //   ),
+                    // },
+                    // {
+                    //   key: "2",
+                    //   label: (
+                    //     <div
+                    //       className="text-red-600"
+                    //       onClick={() => handleDeleteModalOpen(group?._id)}
+                    //     >
+                    //       Delete
+                    //     </div>
+                    //   ),
+                    // },
+                    // {
+                    //   key: "3",
+                    //   label: (
+                    //     <div
+                    //       onClick={() =>
+                    //         handleEnrollmentRequestPrint(group?._id)
+                    //       }
+                    //       className=" text-blue-600 "
+                    //     >
+                    //       Print
+                    //     </div>
+                    //   ),
+                    // },
+                    // {
+                    //   key: "4",
+                    //   label: (
+                    //     <div
+                    //       className={`cursor-pointer ${
+                    //         group?.approval_status !== "true"
+                    //           ? "text-green-600"
+                    //           : "text-red-600"
+                    //       }`}
+                    //       onClick={() =>
+                    //         handleCustomerStatus(
+                    //           group?._id,
+                    //           group?.approval_status !== "true"
+                    //             ? "true"
+                    //             : "false"
+                    //         )
+                    //       }
+                    //     >
+                    //       {group?.approval_status !== "true"
+                    //         ? "Approve Customer"
+                    //         : "Un Approve Customer"}
+                    //     </div>
+                    //   ),
+                    // },
                     {
                       key: "1",
                       label: (
                         <div
                           className="text-green-600"
-                          onClick={() => handleUpdateModalOpen(group?._id)}
+                          onClick={() => handleViewModalOpen(group?._id)}
                         >
-                          Edit
-                        </div>
-                      ),
-                    },
-                    {
-                      key: "2",
-                      label: (
-                        <div
-                          className="text-red-600"
-                          onClick={() => handleDeleteModalOpen(group?._id)}
-                        >
-                          Delete
-                        </div>
-                      ),
-                    },
-                    {
-                      key: "3",
-                      label: (
-                        <div
-                          onClick={() =>
-                            handleEnrollmentRequestPrint(group?._id)
-                          }
-                          className=" text-blue-600 "
-                        >
-                          Print
-                        </div>
-                      ),
-                    },
-                    {
-                      key: "4",
-                      label: (
-                        <div
-                          className={`cursor-pointer ${
-                            group?.approval_status !== "true"
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }`}
-                          onClick={() =>
-                            handleCustomerStatus(
-                              group?._id,
-                              group?.approval_status !== "true"
-                                ? "true"
-                                : "false"
-                            )
-                          }
-                        >
-                          {group?.approval_status !== "true"
-                            ? "Approve Customer"
-                            : "Un Approve Customer"}
+                          View
                         </div>
                       ),
                     },
@@ -364,6 +376,47 @@ const User = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleViewModalOpen = async (userId) => {
+    try {
+      const response = await api.get(`/user/get-user-by-id/${userId}`);
+      setCurrentUpdateUser(response.data);
+      setSelectedGroup(response?.data?.selected_plan);
+      setUpdateFormData({
+        full_name: response?.data?.full_name,
+        email: response?.data?.email,
+        phone_number: response?.data?.phone_number,
+        // ... include all other fields from your update form
+        title: response?.data?.title,
+        father_name: response?.data?.father_name,
+        gender: response?.data?.gender,
+        marital_status: response?.data?.marital_status,
+        dateofbirth: response?.data?.dateofbirth?.split("T")[0],
+        nationality: response?.data?.nationality,
+        village: response?.data?.village,
+        taluk: response?.data?.taluk,
+        district: response?.data?.district,
+        state: response?.data?.state,
+        collection_area: response?.data?.collection_area?._id || "",
+        collection_executive: response?.data?.collection_executive?._id || "",
+        alternate_number: response?.data?.alternate_number,
+        referral_name: response?.data?.referral_name,
+        nominee_name: response?.data?.nominee_name,
+        nominee_dateofbirth: response?.data?.nominee_dateofbirth?.split("T")[0],
+        nominee_relationship: response?.data?.nominee_relationship,
+        nominee_phone_number: response?.data?.nominee_phone_number,
+        bank_name: response?.data?.bank_name,
+        bank_branch_name: response?.data?.bank_branch_name,
+        bank_account_number: response?.data?.bank_account_number,
+        bank_IFSC_code: response?.data?.bank_IFSC_code,
+      });
+      setShowModalUpdate(true);
+      setIsEditing(false);
+      setErrors({});
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const isValid = validateForm("addCustomer");
@@ -439,7 +492,7 @@ const User = () => {
     { key: "customer_id", header: "Customer Id" },
     { key: "name", header: "Customer Name" },
     { key: "phone_number", header: "Customer Phone Number" },
-    {key: "createdAt", header: "Joined On"},
+    { key: "createdAt", header: "Joined On" },
     { key: "address", header: "Customer Address" },
     { key: "pincode", header: "Customer Pincode" },
     { key: "collection_area", header: "Area" },
@@ -885,69 +938,72 @@ const User = () => {
                 )}
               </div>
               <div className="flex flex-row justify-between space-x-4">
-              <div className="w-1/2">
-                <label
-                  className="block mb-2 text-sm font-medium text-gray-900"
-                  htmlFor="area"
-                >
-                  Collection Area
-                </label>
-                <Select
-                  className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
-                  placeholder="Select Or Search Collection Area"
-                  popupMatchSelectWidth={false}
-                  name="collection_area"
-                  showSearch
-                  filterOption={(input, option) =>
-                    option.children
-                      .toString()
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  value={formData?.collection_area || undefined}
-                  onChange={(value) =>
-                    handleAntDSelect("collection_area", value)
-                  }
-                >
-                  {areas.map((area) => (
-                    <Select.Option key={area._id} value={area._id}>
-                      {area.route_name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </div>
-              
-              <div className="w-1/2">
-                <label
-                  className="block mb-2 text-sm font-medium text-gray-900"
-                  htmlFor="area"
-                >
-                  Collection Executive
-                </label>
-                <Select
-                  className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
-                  placeholder="Select Or Search Collection Area"
-                  popupMatchSelectWidth={false}
-                  name="collection_executive"
-                  showSearch
-                  filterOption={(input, option) =>
-                    option.children
-                      .toString()
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  value={formData?.collection_executive || undefined}
-                  onChange={(value) =>
-                    handleAntDSelect("collection_executive", value)
-                  }
-                >
-                  {collectionExecutive.map((collection) => (
-                    <Select.Option key={collection._id} value={collection._id}>
-                      {`${collection.name} | ${collection.phone_number}`}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </div>
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="area"
+                  >
+                    Collection Area
+                  </label>
+                  <Select
+                    className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                    placeholder="Select Or Search Collection Area"
+                    popupMatchSelectWidth={false}
+                    name="collection_area"
+                    showSearch
+                    filterOption={(input, option) =>
+                      option.children
+                        .toString()
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    value={formData?.collection_area || undefined}
+                    onChange={(value) =>
+                      handleAntDSelect("collection_area", value)
+                    }
+                  >
+                    {areas.map((area) => (
+                      <Select.Option key={area._id} value={area._id}>
+                        {area.route_name}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="w-1/2">
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="area"
+                  >
+                    Collection Executive
+                  </label>
+                  <Select
+                    className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                    placeholder="Select Or Search Collection Area"
+                    popupMatchSelectWidth={false}
+                    name="collection_executive"
+                    showSearch
+                    filterOption={(input, option) =>
+                      option.children
+                        .toString()
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    value={formData?.collection_executive || undefined}
+                    onChange={(value) =>
+                      handleAntDSelect("collection_executive", value)
+                    }
+                  >
+                    {collectionExecutive.map((collection) => (
+                      <Select.Option
+                        key={collection._id}
+                        value={collection._id}
+                      >
+                        {`${collection.name} | ${collection.phone_number}`}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
               </div>
               <div className="w-full flex justify-end">
                 <button
@@ -967,8 +1023,68 @@ const User = () => {
         >
           <div className="py-6 px-5 lg:px-8 text-left">
             <h3 className="mb-4 text-xl font-bold text-gray-900">
-              Update Customer
+              Customer Details
             </h3>
+
+            <div className="mt-6 flex justify-end gap-3 mb-4">
+             
+              <button
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-green-100 border border-green-300 rounded-md hover:bg-green-200 transition"
+                onClick={() => setIsEditing(true)}
+              >
+                <i className="ri-edit-line"></i>
+                Edit
+              </button>
+
+             
+              <button
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-sky-200 transition"
+                onClick={() =>
+                  handleEnrollmentRequestPrint(currentUpdateUser?._id)
+                }
+              >
+                <i className="ri-printer-line"></i>
+                Print
+              </button>
+
+              {/* Delete */}
+              <button
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-md hover:bg-red-200 transition"
+                onClick={() => handleDeleteModalOpen(currentUpdateUser?._id)}
+              >
+                <i className="ri-delete-bin-line"></i>
+                Delete
+              </button>
+
+              {/* Approve / Unapprove */}
+              <button
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border transition ${
+                  currentUpdateUser?.approval_status !== "true"
+                    ? "text-emerald-700 bg-emerald-100 border-emerald-300 hover:bg-emerald-200"
+                    : "text-red-700 bg-red-100 border-red-300 hover:bg-red-200"
+                }`}
+                onClick={() =>
+                  handleCustomerStatus(
+                    currentUpdateUser?._id,
+                    currentUpdateUser?.approval_status !== "true"
+                      ? "true"
+                      : "false"
+                  )
+                }
+              >
+                <i
+                  className={
+                    currentUpdateUser?.approval_status !== "true"
+                      ? "ri-user-follow-line"
+                      : "ri-user-unfollow-line"
+                  }
+                ></i>
+                {currentUpdateUser?.approval_status !== "true"
+                  ? "Approve Customer"
+                  : "Unapprove Customer"}
+              </button>
+            </div>
+
             <form className="space-y-6" onSubmit={handleUpdate} noValidate>
               <div className="flex flex-row justify-between space-x-4">
                 <div className="w-1/2">
@@ -992,6 +1108,7 @@ const User = () => {
                     }
                     value={updateFormData?.title || undefined}
                     onChange={(value) => handleAntInputDSelect("title", value)}
+                    disabled={!isEditing}
                   >
                     <Select.Option value="">Select Title</Select.Option>
                     {["Mr", "Ms", "Mrs", "M/S", "Dr"].map((cTitle) => (
@@ -1018,6 +1135,7 @@ const User = () => {
                     placeholder="Enter the Full Name"
                     required
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                   {errors.full_name && (
                     <p className="mt-2 text-sm text-red-600">
@@ -1044,6 +1162,7 @@ const User = () => {
                     placeholder="Enter Email"
                     required
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                   {errors.email && (
                     <p className="mt-2 text-sm text-red-600">{errors.email}</p>
@@ -1065,6 +1184,7 @@ const User = () => {
                     placeholder="Enter Phone Number"
                     required
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                   {errors.phone_number && (
                     <p className="mt-2 text-sm text-red-600">
@@ -1091,6 +1211,7 @@ const User = () => {
                     placeholder="Enter Adhaar Number"
                     required
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                   {errors.adhaar_no && (
                     <p className="mt-2 text-sm text-red-600">
@@ -1114,6 +1235,7 @@ const User = () => {
                     placeholder="Enter Pan Number"
                     required
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                   {errors.pan_no && (
                     <p className="mt-2 text-sm text-red-600">{errors.pan_no}</p>
@@ -1137,6 +1259,7 @@ const User = () => {
                   placeholder="Enter the Address"
                   required
                   className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  readOnly={!isEditing}
                 />
                 {errors.address && (
                   <p className="mt-2 text-sm text-red-600">{errors.address}</p>
@@ -1160,6 +1283,7 @@ const User = () => {
                     placeholder="Enter Pincode"
                     required
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                   {errors.pincode && (
                     <p className="mt-2 text-sm text-red-600">
@@ -1183,6 +1307,7 @@ const User = () => {
                     id="father-name"
                     placeholder="Enter the Father name"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
               </div>
@@ -1211,6 +1336,7 @@ const User = () => {
                     onChange={(value) =>
                       handleAntInputDSelect("collection_area", value)
                     }
+                    disabled={!isEditing}
                   >
                     <Select.Option value="">
                       Select or Search Collection Area
@@ -1223,36 +1349,40 @@ const User = () => {
                   </Select>
                 </div>
                 <div className="w-1/2">
-                <label
-                  className="block mb-2 text-sm font-medium text-gray-900"
-                  htmlFor="area"
-                >
-                  Collection Executive
-                </label>
-                <Select
-                  className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
-                  placeholder="Select Or Search Collection Executive"
-                  popupMatchSelectWidth={false}
-                  name="collection_executive"
-                  showSearch
-                  filterOption={(input, option) =>
-                    option.children
-                      .toString()
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  value={updateFormData?.collection_executive || undefined}
-                  onChange={(value) =>
-                    handleAntInputDSelect("collection_executive", value)
-                  }
-                >
-                  {collectionExecutive.map((collection) => (
-                    <Select.Option key={collection._id} value={collection._id}>
-                      {`${collection.name} | ${collection.phone_number}`}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </div>
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="area"
+                  >
+                    Collection Executive
+                  </label>
+                  <Select
+                    className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
+                    placeholder="Select Or Search Collection Executive"
+                    popupMatchSelectWidth={false}
+                    name="collection_executive"
+                    showSearch
+                    filterOption={(input, option) =>
+                      option.children
+                        .toString()
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    value={updateFormData?.collection_executive || undefined}
+                    onChange={(value) =>
+                      handleAntInputDSelect("collection_executive", value)
+                    }
+                    disabled={!isEditing}
+                  >
+                    {collectionExecutive.map((collection) => (
+                      <Select.Option
+                        key={collection._id}
+                        value={collection._id}
+                      >
+                        {`${collection.name} | ${collection.phone_number}`}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
               </div>
 
               <div className="flex flex-row justify-between space-x-4">
@@ -1277,6 +1407,7 @@ const User = () => {
                     id="date"
                     placeholder="Enter the Date of Birth"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
 
@@ -1301,6 +1432,7 @@ const User = () => {
                     }
                     value={updateFormData?.gender || undefined}
                     onChange={(value) => handleAntInputDSelect("gender", value)}
+                    disabled={!isEditing}
                   >
                     {["Male", "Female"].map((gType) => (
                       <Select.Option key={gType} value={gType}>
@@ -1334,6 +1466,7 @@ const User = () => {
                     onChange={(value) =>
                       handleAntInputDSelect("marital_status", value)
                     }
+                    disabled={!isEditing}
                   >
                     {["Married", "Unmarried", "Widow", "Divorced"].map(
                       (mStatus) => (
@@ -1360,6 +1493,7 @@ const User = () => {
                     id="referral-name"
                     placeholder="Enter the Referral Name"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
               </div>
@@ -1387,6 +1521,7 @@ const User = () => {
                     onChange={(value) =>
                       handleAntInputDSelect("nationality", value)
                     }
+                    disabled={!isEditing}
                   >
                     {["Indian", "Other"].map((nation) => (
                       <Select.Option key={nation} value={nation}>
@@ -1411,6 +1546,7 @@ const User = () => {
                     id="alternate-number"
                     placeholder="Enter the Alternate Phone number"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
               </div>
@@ -1431,6 +1567,7 @@ const User = () => {
                     id="village"
                     placeholder="Enter the Village"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
 
@@ -1449,6 +1586,7 @@ const User = () => {
                     id="taluk"
                     placeholder="Enter the taluk"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
               </div>
@@ -1474,6 +1612,7 @@ const User = () => {
                     }
                     value={updateFormData?.state || undefined}
                     onChange={(value) => handleAntInputDSelect("state", value)}
+                    disabled={!isEditing}
                   >
                     {["Karnataka", "Maharashtra", "Tamil Nadu"].map((state) => (
                       <Select.Option key={state} value={state}>
@@ -1498,6 +1637,7 @@ const User = () => {
                     onChange={handleInputChange}
                     placeholder="Enter District"
                     className="w-full p-2 h-14 border rounded-md sm:text-lg text-sm bg-gray-50 border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                    readOnly={!isEditing}
                   />
                   {/* )} */}
                 </div>
@@ -1519,6 +1659,7 @@ const User = () => {
                     id="nominee"
                     placeholder="Enter the Nominee Name"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
 
@@ -1543,6 +1684,7 @@ const User = () => {
                     id="nominee-date"
                     placeholder="Enter the Nominee Date of Birth"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
               </div>
@@ -1570,6 +1712,7 @@ const User = () => {
                     onChange={(value) =>
                       handleAntInputDSelect("nominee_relationship", value)
                     }
+                    disabled={!isEditing}
                   >
                     {[
                       "Father",
@@ -1601,6 +1744,7 @@ const User = () => {
                     id="nominee-phone-number"
                     placeholder="Enter the Nominee Phone number"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
               </div>
@@ -1621,6 +1765,7 @@ const User = () => {
                     id="bank-name"
                     placeholder="Enter the Customer Bank Name"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
 
@@ -1639,6 +1784,7 @@ const User = () => {
                     id="bank-branch-name"
                     placeholder="Enter the Bank Branch Name"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
               </div>
@@ -1658,6 +1804,7 @@ const User = () => {
                     id="account-number"
                     placeholder="Enter the Customer Bank Account Number"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
 
@@ -1676,19 +1823,21 @@ const User = () => {
                     id="ifsc"
                     placeholder="Enter the Bank IFSC Code"
                     className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                    readOnly={!isEditing}
                   />
                 </div>
               </div>
-
-              <div className="w-full flex justify-end">
-                <button
-                  type="submit"
-                  className="w-1/4 text-white bg-blue-700 hover:bg-blue-800 border-2 border-black
+              {isEditing && (
+                <div className="w-full flex justify-end">
+                  <button
+                    type="submit"
+                    className="w-1/4 text-white bg-blue-700 hover:bg-blue-800 border-2 border-black
               focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
-                >
-                  Update
-                </button>
-              </div>
+                  >
+                    Update
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </Modal>
