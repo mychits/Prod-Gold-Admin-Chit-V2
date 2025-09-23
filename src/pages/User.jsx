@@ -29,7 +29,7 @@ const User = () => {
   const [files, setFiles] = useState({});
   const [districts, setDistricts] = useState([]);
   const [reloadTrigger, setReloadTrigger] = useState(0);
-  const [collectionExecutive, setCollectionExecutive] = useState([]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
     visibility: false,
@@ -49,7 +49,7 @@ const User = () => {
     pan_no: "",
     track_source: "admin_panel",
     collection_area: "",
-    collection_executive: "",
+   
   });
 
   const [updateFormData, setUpdateFormData] = useState({
@@ -88,9 +88,8 @@ const User = () => {
     bank_account_number: "",
     bank_IFSC_code: "",
     selected_plan: "",
-    collection_executive: "",
+   
   });
-
   const [searchText, setSearchText] = useState("");
   const GlobalSearchChangeHandler = (e) => {
     const { value } = e.target;
@@ -112,17 +111,6 @@ const User = () => {
     fetchCollectionArea();
   }, [reloadTrigger]);
 
-  useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const response = await api.get("/agent/get-agent");
-        setCollectionExecutive(response.data);
-      } catch (err) {
-        console.error("Failed to fetch employee", err);
-      }
-    };
-    fetchAgents();
-  }, []);
 
   useEffect(() => {
     const fetchDistricts = async () => {
@@ -365,7 +353,9 @@ const User = () => {
     if (data.pan_no && !regex.pan.test(data.pan_no.toUpperCase())) {
       newErrors.pan_no = "Invalid PAN format (e.g., ABCDE1234F)";
     }
-
+if (!data.collection_area) {
+      newErrors.collection_area = "Collection Area is required";
+    } 
     if (!data.address.trim()) {
       newErrors.address = "Address is required";
     } else if (data.address.trim().length < 3) {
@@ -397,7 +387,6 @@ const User = () => {
         district: response?.data?.district,
         state: response?.data?.state,
         collection_area: response?.data?.collection_area?._id || "",
-        collection_executive: response?.data?.collection_executive?._id || "",
         alternate_number: response?.data?.alternate_number,
         referral_name: response?.data?.referral_name,
         nominee_name: response?.data?.nominee_name,
@@ -446,7 +435,6 @@ const User = () => {
           pincode: "",
           adhaar_no: "",
           pan_no: "",
-          collection_executive: "",
           collection_area: "",
           track_source: "admin-panel",
         });
@@ -540,7 +528,7 @@ const User = () => {
         district: response?.data?.district,
         state: response?.data?.state,
         collection_area: response?.data?.collection_area?._id || "",
-        collection_executive: response?.data?.collection_executive?._id || "",
+        
         alternate_number: response?.data?.alternate_number,
         referral_name: response?.data?.referral_name,
         nominee_name: response?.data?.nominee_name,
@@ -938,7 +926,7 @@ const User = () => {
                 )}
               </div>
               <div className="flex flex-row justify-between space-x-4">
-                <div className="w-1/2">
+                <div className="w-full">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="area"
@@ -968,42 +956,12 @@ const User = () => {
                       </Select.Option>
                     ))}
                   </Select>
+                   {errors.collection_area && (
+                  <p className="mt-2 text-sm text-red-600">{errors.collection_area}</p>
+                )}
                 </div>
 
-                <div className="w-1/2">
-                  <label
-                    className="block mb-2 text-sm font-medium text-gray-900"
-                    htmlFor="area"
-                  >
-                    Collection Executive
-                  </label>
-                  <Select
-                    className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
-                    placeholder="Select Or Search Collection Area"
-                    popupMatchSelectWidth={false}
-                    name="collection_executive"
-                    showSearch
-                    filterOption={(input, option) =>
-                      option.children
-                        .toString()
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    value={formData?.collection_executive || undefined}
-                    onChange={(value) =>
-                      handleAntDSelect("collection_executive", value)
-                    }
-                  >
-                    {collectionExecutive.map((collection) => (
-                      <Select.Option
-                        key={collection._id}
-                        value={collection._id}
-                      >
-                        {`${collection.name} | ${collection.phone_number}`}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </div>
+              
               </div>
               <div className="w-full flex justify-end">
                 <button
@@ -1312,7 +1270,7 @@ const User = () => {
                 </div>
               </div>
               <div className="flex flex-row justify-between space-x-4">
-                <div className="w-1/2">
+                <div className="w-full">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="area"
@@ -1348,41 +1306,7 @@ const User = () => {
                     ))}
                   </Select>
                 </div>
-                <div className="w-1/2">
-                  <label
-                    className="block mb-2 text-sm font-medium text-gray-900"
-                    htmlFor="area"
-                  >
-                    Collection Executive
-                  </label>
-                  <Select
-                    className="bg-gray-50 border h-14 border-gray-300 text-gray-900 text-sm rounded-lg w-full"
-                    placeholder="Select Or Search Collection Executive"
-                    popupMatchSelectWidth={false}
-                    name="collection_executive"
-                    showSearch
-                    filterOption={(input, option) =>
-                      option.children
-                        .toString()
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    value={updateFormData?.collection_executive || undefined}
-                    onChange={(value) =>
-                      handleAntInputDSelect("collection_executive", value)
-                    }
-                    disabled={!isEditing}
-                  >
-                    {collectionExecutive.map((collection) => (
-                      <Select.Option
-                        key={collection._id}
-                        value={collection._id}
-                      >
-                        {`${collection.name} | ${collection.phone_number}`}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </div>
+               
               </div>
 
               <div className="flex flex-row justify-between space-x-4">

@@ -269,12 +269,7 @@ const MenuSidebar = [
             icon: <FaMapLocationDot />,
             link: "/collection-area-request",
           },
-          {
-            id: ids.fifteen,
-            title: "Collection Mapping",
-            icon: <RiUserLocationFill size="20" />,
-            link: "/collection-area-mapping",
-          },
+        
         ],
       },
       {

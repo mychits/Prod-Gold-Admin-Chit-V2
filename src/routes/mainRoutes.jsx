@@ -82,7 +82,7 @@ import MobileAppEnroll from "../pages/MobileAppEnroll";
 import PaymentLinkMenu from "../pages/PaymentLinkMenu";
 import ChitBulkPaymentLink from "../pages/BulkChitPaymentLink";
 import IndividualChitPaymentLink from "../pages/IndividualChitPaymentLink";
-import CollectionAreaMapping from "../pages/CollectionAreaMapping";
+
 import IndividualRegistrationChitPaymentLink from "../pages/IndividualRegistrationChitPaymentLink";
 import TargetIncentiveReport from "../pages/TargetIncentive";
 import TargetPayOutSalary from "../pages/TargetPayoutSalary";
@@ -135,14 +135,7 @@ const mainRoutes = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  {
-    path: "/collection-area-mapping",
-    element: (
-      <ProtectedRoute>
-        <CollectionAreaMapping />
-      </ProtectedRoute>
-    ),
-  },
+  
   {
     path: "/pay-in-menu",
     element: (
