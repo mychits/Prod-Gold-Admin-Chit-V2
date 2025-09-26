@@ -17,7 +17,11 @@ const CollectionArea = () => {
       try {
         const response = await api.get("/agent/get-employee");
         const employees = response.data?.employee;
-        setEmployees(employees);
+        const filteredEmp = employees.map((emp) => ({
+          value: emp._id,
+          label: emp.name,
+        }));
+        setEmployees(filteredEmp);
       } catch (error) {
         console.error("Error Occurred while fetching Employee");
         setEmployees([]);
@@ -64,7 +68,7 @@ const CollectionArea = () => {
     const fetchAreaCollection = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get(
+        const response = await api.get( 
           "/collection-area-request/get-collection-area-data"
         );
         setCollectionArea(response.data);
@@ -75,9 +79,9 @@ const CollectionArea = () => {
               id: index + 1,
               name: collectionArea?.route_name,
               pincode: collectionArea?.route_pincode,
-              employee_name: collectionArea?.agent_id?.name,
-              employee_phone: collectionArea?.agent_id?.phone_number,
-              employee_id: collectionArea?.agent_id?.employeeCode,
+              employee_name: collectionArea?.agent_id?.map(emp=>emp?.name).join(","),
+              employee_phone: collectionArea?.agent_id?.map(emp=>emp?.phone_number).join(","),
+              employee_id: collectionArea?.agent_id?.map(emp=>emp?.employeeCode).join(","),
               action: (
                 <div className="flex justify-center gap-2">
                   <Dropdown
@@ -134,6 +138,7 @@ const CollectionArea = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setCollectionAreaData((prevData) => ({
       ...prevData,
       [name]: value,
@@ -396,19 +401,19 @@ const CollectionArea = () => {
                 >
                   Select Employee
                 </label>
-                <select
-                  onChange={handleChange}
-                  name="agent_id"
-                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
-                >
-                  <option value={""}>Select Employee</option>
 
-                  {employees.map((emp) => (
-                    <option key={emp._id} value={emp?._id}>
-                      {emp.name} | {emp?.phone_number} | {emp?.employeeCode}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  mode="tags"
+                  size="large"
+                  placeholder="Please select Employee"
+                  onChange={(empIdArr) => {
+                    handleChange({
+                      target: { name: "agent_id", value: empIdArr },
+                    });
+                  }}
+                  style={{ width: "100%" }}
+                  options={employees}
+                />
               </div>
               <div className="w-full flex justify-end">
                 <button
@@ -474,19 +479,15 @@ const CollectionArea = () => {
                 >
                   Select Employee
                 </label>
-                <select
-                  onChange={handleInputChange}
-                  name={"agent_id"}
-                  value={updateCollectionAreaData?.agent_id}
-                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
-                >
-                  <option value={""}>Select Employee</option>
-                  {employees.map((emp) => (
-                    <option value={emp._id}>
-                      {emp?.name} | {emp?.phone_number} | {emp?.employeeCode}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  mode="tags"
+                  size={"large"}
+                  placeholder="Select Employee"
+                  defaultValue={updateCollectionAreaData?.agent_id}
+                  onChange={(arrayElement)=>handleInputChange({target:{name:"agent_id",value:arrayElement}})}
+                  style={{ width: "100%" }}
+                  options={employees}
+                />
               </div>
               <div className="w-full flex justify-end">
                 <button

@@ -202,7 +202,6 @@ const DueReport = () => {
     { key: "groupValue", header: "Group Value" },
     { key: "enrollmentDate", header: "Enrollment Date" },
     { key: "referred_type", header: "Referred Type" },
-
     { key: "reffered_by", header: "Referred By" },
     { key: "payment_type", header: "Payment Type" },
     { key: "paymentsTicket", header: "Ticket" },
