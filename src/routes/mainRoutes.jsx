@@ -91,6 +91,14 @@ import TargetCommission from "../pages/TargetCommission";
 import TargetPayOutMenu from "../pages/TargetPayOutMenu";
 import MonthlyInstallmentTurnoverReport from "../pages/MonthlyInstallmentTurnoverReport";
 import HoldedCustomerReport from "../pages/HoldedCustomerReport"
+import AuctionBidStatus from "../pages/AuctionBidStatus"
+import AuctionWinnerDocuments from "../pages/AuctionWinnerDocuments";
+import AuctionInformation from "../pages/AuctionInformation";
+import AuctionTermsandCondition from "../pages/AuctionTermsandCondition";
+import LeadWhatsappWelcomeMessage from "../pages/LeadWhatsappWelcomeMessage";
+import LeadReferredByWhatsappMessage from "../pages/LeadReferredByWhatsappMessage";
+import CustomerWelcomeWhatsappMessage from "../pages/CustomerWelcomeWhatsappMessage";
+import CustomerChitPlanWhatsappMessage from "../pages/CustomerChitPlanWhatsappMessage";
 import Insurance from "../pages/Insurance";
 
 import RegistrationFeeReport from "../pages/RegistrationFeeReport";
@@ -593,6 +601,14 @@ const mainRoutes = createBrowserRouter([
       { path: "what-promo", element: <WhatsappPromo /> },
       { path: "bid-winner", element: <BidWinner /> },
       { path: "payment-link", element: <PaymentLink /> },
+       {path: "bid-status", element: <AuctionBidStatus/>},
+      {path: "auction-info", element: <AuctionInformation/>},
+      {path: "winner-document", element: <AuctionWinnerDocuments/>},
+      {path: "auction-terms-condition", element: <AuctionTermsandCondition/>},
+      {path: "lead-welcome-message", element: <LeadWhatsappWelcomeMessage/>},
+      {path: "lead-referredby-message", element: <LeadReferredByWhatsappMessage/>},
+      {path: "customer-welcome-message", element: <CustomerWelcomeWhatsappMessage/>},
+      {path: "customer-chitplan-message", element: <CustomerChitPlanWhatsappMessage/>},
     ],
   },
 ]);

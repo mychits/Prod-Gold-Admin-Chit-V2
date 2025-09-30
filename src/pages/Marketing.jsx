@@ -227,6 +227,50 @@ const mainMenus = [
           
         ],
       },
+       {
+        key: "#main-7",
+        title: "Lead Whatsapp Message",
+        icon: <FaWhatsapp size={20} />,
+        subMenus: [
+          {
+            key: "#20",
+            title: "Welcome Message",
+            link: "/marketing/lead-welcome-message",
+            icon: <RiMoneyRupeeCircleLine size={22} />,
+          },
+          {
+            key: "#21",
+            title: "ReferredBy Message",
+            link: "/marketing/lead-referredby-message",
+            icon: <RiMoneyRupeeCircleLine size={22} />,
+          },
+          ,
+         
+          
+        ],
+      },
+       {
+        key: "#main-8",
+        title: "Customer Whatsapp Message",
+        icon: <FaWhatsapp size={20} />,
+        subMenus: [
+          {
+            key: "#20",
+            title: "Welcome Message",
+            link: "/marketing/customer-welcome-message",
+            icon: <RiMoneyRupeeCircleLine size={22} />,
+          },
+          {
+            key: "#21",
+            title: "ChitPlan Message",
+            link: "/marketing/customer-chitplan-message",
+            icon: <RiMoneyRupeeCircleLine size={22} />,
+          },
+          ,
+         
+          
+        ],
+      },
       {
         key: "#main-6",
         title: "Auction Message",
@@ -244,6 +288,31 @@ const mainMenus = [
             link: "/marketing/bid-winner",
             icon: <RiMoneyRupeeCircleLine size={22} />,
           },
+          {
+            key: "#18",
+            title: "Auction Bid status",
+            link: "/marketing/bid-status",
+            icon: <RiMoneyRupeeCircleLine size={22} />,
+          },
+          {
+            key: "#19",
+            title: "Bid Winner Document List",
+            link: "/marketing/winner-document",
+            icon: <RiMoneyRupeeCircleLine size={22} />,
+          },
+          {
+            key: "#20",
+            title: "Auction information",
+            link: "/marketing/auction-info",
+            icon: <RiMoneyRupeeCircleLine size={22} />,
+          },
+          {
+            key: "#21",
+            title: "Auction Terms and Condition",
+            link: "/marketing/auction-terms-condition",
+            icon: <RiMoneyRupeeCircleLine size={22} />,
+          },
+
         ],
       },
       {
