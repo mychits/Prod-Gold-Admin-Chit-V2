@@ -216,8 +216,8 @@ const UserReport = () => {
             setRegistrationDate(
               registrationFees[0]?.createdAt
                 ? new Date(registrationFees[0].createdAt).toLocaleDateString(
-                    "en-GB"
-                  )
+                  "en-GB"
+                )
                 : null
             );
           }
@@ -357,9 +357,9 @@ const UserReport = () => {
             loan_amount: loan?.loan_value,
             tenure: loan?.loan_details?.loan?.tenure,
             service_charge: loan?.loan_details?.loan?.service_charges,
-            total_paid_amount:loan?.total_paid_amount,
+            total_paid_amount: loan?.total_paid_amount,
             balance: loan?.balance,
-            
+
           }));
           setFilteredBorrowerData(filteredBorrowerData);
         }
@@ -537,7 +537,7 @@ const UserReport = () => {
 
         if (response.data && response.data.length > 0) {
           setFilteredAuction(response.data);
-          console.log(response.data,"resienns")
+          console.log(response.data, "resienns")
 
           const formattedData = response.data
             .map((group, index) => {
@@ -579,42 +579,42 @@ const UserReport = () => {
                 balance:
                   groupType === "double"
                     ? groupInstall * auctionCount +
-                      groupInstall -
-                      totalPaidAmount
+                    groupInstall -
+                    totalPaidAmount
                     : totalPayable +
-                      groupInstall +
-                      firstDividentHead -
-                      totalPaidAmount,
+                    groupInstall +
+                    firstDividentHead -
+                    totalPaidAmount,
                 referred_type: group?.enrollment?.referred_type || "N/A",
                 referrer_name: group?.enrollment?.referrer_name || "N/A",
                 customer_status: group?.enrollment?.customer_status || "N/A",
-                removal_reason : group?.enrollment?.removal_reason || "N/A",
-               
+                removal_reason: group?.enrollment?.removal_reason || "N/A",
+
               };
             })
             .filter((item) => item !== null);
 
           setTableAuctions(formattedData);
           setCommission(0);
-         console.info(formattedData, "test");
-          const totalToBePaidAmount = formattedData.filter(summary=>summary.customer_status==="Active").reduce((sum, group) => {
+          console.info(formattedData, "test");
+          const totalToBePaidAmount = formattedData.filter(summary => summary.customer_status === "Active").reduce((sum, group) => {
             return sum + (group?.totalBePaid || 0);
           }, 0);
           setTotalToBePaid(totalToBePaidAmount);
 
-          const totalNetToBePaidAmount = formattedData.filter(summary=>summary.customer_status==="Active").reduce((sum, group) => {
+          const totalNetToBePaidAmount = formattedData.filter(summary => summary.customer_status === "Active").reduce((sum, group) => {
             return sum + (group?.toBePaidAmount || 0);
           }, 0);
           setNetTotalProfit(totalNetToBePaidAmount);
 
           const totalPaidAmount = formattedData
-  .filter(summary => summary.customer_status === "Active")
-  .reduce((sum, group) => sum + (group?.paidAmount || 0), 0);
+            .filter(summary => summary.customer_status === "Active")
+            .reduce((sum, group) => sum + (group?.paidAmount || 0), 0);
           setTotalPaid(totalPaidAmount);
 
           const totalProfit = formattedData
-  .filter(summary => summary.customer_status === "Active")
-  .reduce((sum, group) => sum + (group?.profit || 0), 0);
+            .filter(summary => summary.customer_status === "Active")
+            .reduce((sum, group) => sum + (group?.profit || 0), 0);
           setTotalProfit(totalProfit);
         } else {
           setFilteredAuction([]);
@@ -887,32 +887,29 @@ const UserReport = () => {
                   <div className="mt-6 mb-8">
                     <div className="flex justify-start border-b border-gray-300 mb-4">
                       <button
-                        className={`px-6 py-2 font-medium ${
-                          activeTab === "groupDetails"
+                        className={`px-6 py-2 font-medium ${activeTab === "groupDetails"
                             ? "border-b-2 border-blue-500 text-blue-500"
                             : "text-gray-500"
-                        }`}
+                          }`}
                         onClick={() => handleTabChange("groupDetails")}
                       >
                         Customer Details
                       </button>
                       <button
-                        className={`px-6 py-2 font-medium ${
-                          activeTab === "basicReport"
+                        className={`px-6 py-2 font-medium ${activeTab === "basicReport"
                             ? "border-b-2 border-blue-500 text-blue-500"
                             : "text-gray-500"
-                        }`}
+                          }`}
                         onClick={() => handleTabChange("basicReport")}
                       >
                         Customer Ledger
                       </button>
 
                       <button
-                        className={`px-6 py-2 font-medium ${
-                          activeTab === "disbursement"
+                        className={`px-6 py-2 font-medium ${activeTab === "disbursement"
                             ? "border-b-2 border-blue-500 text-blue-500"
                             : "text-gray-500"
-                        }`}
+                          }`}
                         onClick={() => handleTabChange("disbursement")}
                       >
                         PayOut | Disbursement
@@ -1013,11 +1010,10 @@ const UserReport = () => {
                                     }))
                                   }
                                   className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out
-        ${
-          visibleRows.row1
-            ? "bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg"
-            : "bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md hover:shadow-lg hover:scale-105"
-        }
+        ${visibleRows.row1
+                                      ? "bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg"
+                                      : "bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md hover:shadow-lg hover:scale-105"
+                                    }
       `}
                                 >
                                   {visibleRows.row1
@@ -1033,11 +1029,10 @@ const UserReport = () => {
                                     }))
                                   }
                                   className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out
-        ${
-          visibleRows.row2
-            ? "bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg"
-            : "bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md hover:shadow-lg hover:scale-105"
-        }
+        ${visibleRows.row2
+                                      ? "bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg"
+                                      : "bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md hover:shadow-lg hover:scale-105"
+                                    }
       `}
                                 >
                                   {visibleRows.row2
@@ -1053,11 +1048,10 @@ const UserReport = () => {
                                     }))
                                   }
                                   className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out
-        ${
-          visibleRows.row3
-            ? "bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg"
-            : "bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md hover:shadow-lg hover:scale-105"
-        }
+        ${visibleRows.row3
+                                      ? "bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg"
+                                      : "bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md hover:shadow-lg hover:scale-105"
+                                    }
       `}
                                 >
                                   {visibleRows.row3
@@ -1073,11 +1067,10 @@ const UserReport = () => {
                                     }))
                                   }
                                   className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out
-        ${
-          visibleRows.row4
-            ? "bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg"
-            : "bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md hover:shadow-lg hover:scale-105"
-        }
+        ${visibleRows.row4
+                                      ? "bg-gradient-to-r from-green-500 to-green-700 text-white shadow-lg"
+                                      : "bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md hover:shadow-lg hover:scale-105"
+                                    }
       `}
                                 >
                                   {visibleRows.row4
@@ -1138,8 +1131,8 @@ const UserReport = () => {
                                       value={
                                         group.dateofbirth
                                           ? new Date(group.dateofbirth)
-                                              .toISOString()
-                                              .split("T")[0]
+                                            .toISOString()
+                                            .split("T")[0]
                                           : ""
                                       }
                                     />
@@ -1188,7 +1181,7 @@ const UserReport = () => {
                                       value={group.alternate_number}
                                     />
                                   </div>
-                                  
+
                                 </div>
                               )}
 
@@ -1209,8 +1202,8 @@ const UserReport = () => {
                                       value={
                                         group.nominee_dateofbirth
                                           ? new Date(group.nominee_dateofbirth)
-                                              .toISOString()
-                                              .split("T")[0]
+                                            .toISOString()
+                                            .split("T")[0]
                                           : ""
                                       }
                                     />
@@ -1253,8 +1246,8 @@ const UserReport = () => {
                               </h3>
                               {/* Changed conditional to check TableAuctions directly, as it's the formatted data */}
                               {TableAuctions &&
-                              TableAuctions.length > 0 &&
-                              !isLoading ? (
+                                TableAuctions.length > 0 &&
+                                !isLoading ? (
                                 <div className="mt-5">
                                   <DataTable
                                     data={filterOption(
@@ -1281,15 +1274,14 @@ const UserReport = () => {
                                         ? NetTotalprofit - Totalpaid
                                         : "",
                                     ]}
-                                    exportedFileName={`CustomerReport-${
-                                      TableAuctions.length > 0
+                                    exportedFileName={`CustomerReport-${TableAuctions.length > 0
                                         ? TableAuctions[0].date +
-                                          " to " +
-                                          TableAuctions[
-                                            TableAuctions.length - 1
-                                          ].date
+                                        " to " +
+                                        TableAuctions[
+                                          TableAuctions.length - 1
+                                        ].date
                                         : "empty"
-                                    }.csv`}
+                                      }.csv`}
                                   />
                                   {/* yes you can */}
                                   {filteredBorrowerData.length > 0 && (
@@ -1404,6 +1396,8 @@ const UserReport = () => {
                                 className="border border-gray-300 rounded px-6 py-2 shadow-sm outline-none w-full max-w-md"
                               >
                                 <option value="">Select Group | Ticket</option>
+
+
                                 {filteredAuction.map((group) => {
                                   if (group?.enrollment?.group) {
                                     return (
@@ -1411,48 +1405,55 @@ const UserReport = () => {
                                         key={group.enrollment.group._id}
                                         value={`${group.enrollment.group._id}|${group.enrollment.tickets}`}
                                       >
-                                        {group.enrollment.group.group_name} |{" "}
-                                        {group.enrollment.tickets}
+                                        {group.enrollment.group.group_name} | {group.enrollment.tickets}
                                       </option>
                                     );
                                   }
                                   return null;
                                 })}
-                                {loanCustomers.map((loan) => (
-                                  <option
-                                    key={loan._id}
-                                    value={`Loan|${loan._id}`}
-                                  >
-                                    {`${loan.loan_id} | ₹${loan.loan_amount}`}
-                                  </option>
-                                ))}
-                                {registrationFee.amount > 0 && (
-                                  <div className="mt-6 p-4 border rounded bg-gray-100 w-fit text-gray-800 shadow">
-                                    <p className="text-sm font-semibold">
-                                      Registration Fee Info
-                                    </p>
-                                    <p>
-                                      <strong>Amount:</strong> ₹
-                                      {registrationFee.amount}
-                                    </p>
-                                    <p>
-                                      <strong>Date:</strong>{" "}
-                                      {registrationFee.createdAt
-                                        ? new Date(
-                                            registrationFee.createdAt
-                                          ).toLocaleDateString("en-GB")
-                                        : "N/A"}
-                                    </p>
-                                  </div>
-                                )}
+
+
+                                {Array.isArray(loanCustomers)
+                                  ? loanCustomers.map((loan) => (
+                                    <option key={loan._id} value={`Loan|${loan._id}`}>
+                                      {`${loan.loan_id || "N/A"} | ₹${loan.loan_amount || 0}`}
+                                    </option>
+                                  ))
+                                  : Array.isArray(loanCustomers?.overall_loan)
+                                    ? loanCustomers.overall_loan.map((loan, index) => (
+                                      <option
+                                        key={index}
+                                        value={`Loan|${loan?.loan_details?.loan?._id || index}`}
+                                      >
+                                        {`${loan?.loan_details?.loan?.loan_id || "N/A"} | ₹${loan?.loan_value || 0
+                                          }`}
+                                      </option>
+                                    ))
+                                    : null}
                               </select>
+
+
+                              {registrationFee.amount > 0 && (
+                                <div className="mt-6 p-4 border rounded bg-gray-100 w-fit text-gray-800 shadow">
+                                  <p className="text-sm font-semibold">Registration Fee Info</p>
+                                  <p>
+                                    <strong>Amount:</strong> ₹{registrationFee.amount}
+                                  </p>
+                                  <p>
+                                    <strong>Date:</strong>{" "}
+                                    {registrationFee.createdAt
+                                      ? new Date(registrationFee.createdAt).toLocaleDateString("en-GB")
+                                      : "N/A"}
+                                  </p>
+                                </div>
+                              )}
                             </div>
+
                             <div className="mt-6 flex justify-center gap-8 flex-wrap">
                               <input
                                 type="text"
-                                value={`Registration Fee: ₹${
-                                  registrationAmount || 0
-                                }`}
+                                value={`Registration Fee: ₹${registrationAmount || 0
+                                  }`}
                                 readOnly
                                 className="px-4 py-2 border rounded font-semibold w-60 text-center bg-green-100 text-green-800 border-green-400"
                               />
@@ -1466,10 +1467,9 @@ const UserReport = () => {
 
                               <input
                                 type="text"
-                                value={`Total: ₹${
-                                  Number(finalPaymentBalance) +
+                                value={`Total: ₹${Number(finalPaymentBalance) +
                                   Number(registrationAmount || 0)
-                                }`}
+                                  }`}
                                 readOnly
                                 className="px-4 py-2 border rounded font-semibold w-60 text-center bg-purple-100 text-purple-800 border-purple-400"
                               />
@@ -1477,7 +1477,7 @@ const UserReport = () => {
                           </div>
 
                           {(TableEnrolls && TableEnrolls.length > 0) ||
-                          (borrowersData.length > 0 && !basicLoading) ? (
+                            (borrowersData.length > 0 && !basicLoading) ? (
                             <div className="mt-10">
                               <DataTable
                                 exportedPdfName="Customer Ledger Report"
