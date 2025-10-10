@@ -120,37 +120,37 @@ const PayoutSalary = () => {
     let totalSalary = 0;
     let lossOfPay = 0;
 
-    while (current <= toDate) {
-      const year = current.getFullYear();
-      const month = current.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // while (current <= toDate) {
+    //   const year = current.getFullYear();
+    //   const month = current.getMonth();
+    //   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      const fromDay =
-        current.getFullYear() === fromDate.getFullYear() &&
-          current.getMonth() === fromDate.getMonth()
-          ? fromDate.getDate()
-          : 1;
+    //   const fromDay =
+    //     current.getFullYear() === fromDate.getFullYear() &&
+    //       current.getMonth() === fromDate.getMonth()
+    //       ? fromDate.getDate()
+    //       : 1;
 
-      const toDay =
-        current.getFullYear() === toDate.getFullYear() &&
-          current.getMonth() === toDate.getMonth()
-          ? toDate.getDate()
-          : daysInMonth;
+    //   const toDay =
+    //     current.getFullYear() === toDate.getFullYear() &&
+    //       current.getMonth() === toDate.getMonth()
+    //       ? toDate.getDate()
+    //       : daysInMonth;
 
-      const daysWorked = toDay - fromDay + 1;
-      const dailySalary = salary / daysInMonth;
+    //   const daysWorked = toDay - fromDay + 1;
+    //   const dailySalary = salary / daysInMonth;
 
-      totalSalary += daysWorked * dailySalary;
-      current = new Date(year, month + 1, 1);
-      lossOfPay = parseInt(absent) * dailySalary;
-    }
+    //   totalSalary += daysWorked * dailySalary;
+    //   current = new Date(year, month + 1, 1);
+    //   lossOfPay = parseInt(absent) * dailySalary;
+    // }
 
-    const proRatedSalary = totalSalary;
+    // const proRatedSalary = totalSalary;
 
-    const totalPayableWithIncentive = proRatedSalary - parseInt(lossOfPay);
+    // const totalPayableWithIncentive = proRatedSalary - parseInt(lossOfPay);
 
-    setCalculatedSalary(totalPayableWithIncentive.toFixed(2));
-    setTotalWithIncentive(totalPayableWithIncentive.toFixed(2));
+    // setCalculatedSalary(totalPayableWithIncentive.toFixed(2));
+    // setTotalWithIncentive(totalPayableWithIncentive.toFixed(2));
 
     try {
       const res = await API.get("/payment-out/get-salary-payments");
@@ -163,12 +163,12 @@ const PayoutSalary = () => {
         return matchesAgent && payDate >= fromDate && payDate <= toDate;
       });
 
-      const totalPaid = paidToAgent.reduce(
-        (sum, p) => sum + parseFloat(p.amount || 0),
-        0
-      );
+      // const totalPaid = paidToAgent.reduce(
+      //   (sum, p) => sum + parseFloat(p.amount || 0),
+      //   0
+      // );
 
-      const remaining = totalPayableWithIncentive - totalPaid;
+      // const remaining = totalPayableWithIncentive - totalPaid;
 
       setAlreadyPaid(totalPaid.toFixed(2));
       setRemainingSalary(remaining.toFixed(2));
@@ -177,32 +177,41 @@ const PayoutSalary = () => {
       setAlreadyPaid("0.00");
       setRemainingSalary(totalPayableWithIncentive.toFixed(2));
     }
-  };
+   };
+
+
 
   const fetchEmployeeDetails = async (empId) => {
-    try {
-      const res = await API.get(
-        `/agent/get-additional-employee-info-by-id/${empId}`
-      );
-      const emp = res?.data?.employee;
-      if (emp) {
-        const joining = emp.joining_date?.split("T")[0] || "";
-        const baseSalary = emp.salary || "";
-        setEmployeeDetails({ joining_date: joining, salary: baseSalary });
+  try {
+    const res = await API.get(
+      `/agent/get-additional-employee-info-by-id/${empId}`
+    );
+    const emp = res?.data?.employee;
+    if (emp) {
+      const joining = emp.joining_date?.split("T")[0] || "";
+      const baseSalary = emp.salary || "";
+      setEmployeeDetails({ joining_date: joining, salary: baseSalary });
 
-        if (salaryForm.from_date && salaryForm.to_date) {
-          const fd = formatDate(salaryForm.from_date);
-          const td = formatDate(salaryForm.to_date);
-          // fetchTargetDetails(empId, fd, td);
-          calculateProRatedSalary(fd, td, baseSalary, empId);
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching employee info", err);
-      setEmployeeDetails({ joining_date: "", salary: "" });
-      setCalculatedSalary("");
+      const todayStr = new Date().toISOString().split("T")[0];
+      const newFromDate = joining || todayStr;
+      const newToDate = todayStr;
+
+    
+      setSalaryForm((prev) => ({
+        ...prev,
+        from_date: newFromDate,
+        to_date: newToDate,
+      }));
+
+     
     }
-  };
+  } catch (err) {
+    console.error("Error fetching employee info", err);
+    setEmployeeDetails({ joining_date: "", salary: "" });
+    setCalculatedSalary("");
+   
+  }
+};
 
   const fetchAgents = async () => {
     try {
@@ -300,16 +309,16 @@ const PayoutSalary = () => {
   //   }
   // };
 
-  const resetTargetData = () => {
-    setTargetData({
-      target: 0,
-      achieved: 0,
-      difference: 0,
-      remaining: 0,
-      incentiveAmount: "₹0.00",
-      incentivePercent: "0%",
-    });
-  };
+  // const resetTargetData = () => {
+  //   setTargetData({
+  //     target: 0,
+  //     achieved: 0,
+  //     difference: 0,
+  //     remaining: 0,
+  //     incentiveAmount: "₹0.00",
+  //     incentivePercent: "0%",
+  //   });
+  // };
 
   // Load user info on mount
   useEffect(() => {
@@ -346,38 +355,37 @@ const PayoutSalary = () => {
       const updated = { ...prev, [name]: value };
 
 
-      let errorMsg = "";
+
       const from = updated.from_date ? new Date(updated.from_date) : null;
       const to = updated.to_date ? new Date(updated.to_date) : null;
       const today = new Date(todayStr);
 
+      let fromError = "";
+      let toError = "";
 
-      if (from && from > today) {
-        errorMsg = "From Date cannot be in the future.";
-        updated.from_date = "";
-      }
-      if (to && to > today) {
-        errorMsg = "To Date cannot be in the future.";
-        updated.to_date = "";
-      }
-
-
-      if (from && to && from > to) {
-        errorMsg = "From Date cannot be greater than To Date.";
-        updated.from_date = "";
-        updated.to_date = "";
+      if (from && isNaN(from.getTime())) {
+        fromError = "Invalid From Date";
+      } else if (from && from > today) {
+        fromError = "From Date cannot be in the future.";
       }
 
-
-      if (errorMsg) {
-        api.open({
-          message: "Invalid Date Selection",
-          description: errorMsg,
-          className: "bg-red-500 rounded-lg font-semibold text-white",
-          showProgress: true,
-          pauseOnHover: false,
-        });
+      if (to && isNaN(to.getTime())) {
+        toError = "Invalid To Date";
+      } else if (to && to > today) {
+        toError = "To Date cannot be in the future.";
       }
+
+      if (from && to && !isNaN(from.getTime()) && !isNaN(to.getTime()) && from > to) {
+        fromError = "From Date cannot be greater than To Date.";
+        toError = "To Date cannot be less than From Date.";
+      }
+
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        from_date: fromError,
+        to_date: toError,
+      }));
+
 
       return updated;
     });
@@ -634,15 +642,15 @@ const PayoutSalary = () => {
                       setSalaryForm((prev) => ({
                         ...prev,
                         agent_id: value,
-                        from_date: "",
-                        to_date: "",
+                        // from_date: "",
+                        // to_date: "",
                         amount: "",
                       }));
                       setEmployeeDetails({ joining_date: "", salary: "" });
                       setCalculatedSalary("");
                       setAlreadyPaid("0.00");
                       setRemainingSalary("0.00");
-                      resetTargetData();
+                      // resetTargetData();
                       fetchEmployeeDetails(value);
                     }}
                   >
@@ -760,8 +768,11 @@ const PayoutSalary = () => {
                             value={salaryForm.from_date}
                             max={new Date().toISOString().split("T")[0]}
                             onChange={handleSalaryChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-200"
+                            className={`w-full p-3 border rounded-lg focus:ring focus:ring-blue-200 `}
                           />
+                          {errors.from_date && (
+                            <p className="text-red-500 text-sm mt-1">{errors.from_date}</p>
+                          )}
                         </div>
 
                         <div className="w-1/2">
@@ -774,8 +785,11 @@ const PayoutSalary = () => {
                             value={salaryForm.to_date}
                             max={new Date().toISOString().split("T")[0]}
                             onChange={handleSalaryChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-200"
+                            className={`w-full p-3 border rounded-lg focus:ring focus:ring-blue-200 `}
                           />
+                          {errors.to_date && (
+                            <p className="text-red-500 text-sm mt-1">{errors.to_date}</p>
+                          )}
                         </div>
                       </div>
 
@@ -797,32 +811,35 @@ const PayoutSalary = () => {
 
 
                       {/* Calculate Button - Full Width */}
-                      <div className="col-span-2">
-                        <button
-                          type="button"
-                          className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                          onClick={() => {
-                            if (
-                              salaryForm.agent_id &&
-                              salaryForm.from_date &&
-                              salaryForm.to_date &&
-                              employeeDetails.salary
-                            ) {
-                              const fd = formatDate(salaryForm.from_date);
-                              const td = formatDate(salaryForm.to_date);
-                              // fetchTargetDetails(salaryForm.agent_id, fd, td);
-                              calculateProRatedSalary(
-                                fd,
-                                td,
-                                employeeDetails.salary,
-                                salaryForm.agent_id
-                              );
-                            }
-                          }}
-                        >
-                          Calculate
-                        </button>
+                      <div className="col-span-2 flex justify-end">
+                        {salaryForm.from_date && salaryForm.to_date && (
+                          <button
+                            type="button"
+                            className="mt-2 bg-green-600 hover:bg-green-700 text-white  px-4 py-2 rounded"
+                            onClick={() => {
+                              if (
+                                salaryForm.agent_id &&
+                                salaryForm.from_date &&
+                                salaryForm.to_date &&
+                                employeeDetails.salary
+                              ) {
+                                const fd = formatDate(salaryForm.from_date);
+                                const td = formatDate(salaryForm.to_date);
+                                // fetchTargetDetails(salaryForm.agent_id, fd, td);
+                                calculateProRatedSalary(
+                                  fd,
+                                  td,
+                                  employeeDetails.salary,
+                                  salaryForm.agent_id
+                                );
+                              }
+                            }}
+                          >
+                            Calculate
+                          </button>
+                        )}
                       </div>
+
                     </div>
 
 
