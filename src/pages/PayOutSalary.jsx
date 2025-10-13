@@ -591,8 +591,8 @@ const PayoutSalary = () => {
     const newErrors = {};
 
     if (!salaryForm.agent_id) newErrors.agent_id = "Please select an agent";
-    if (!salaryForm.amount || isNaN(salaryForm.amount))
-      newErrors.amount = "Please enter a valid amount";
+    // if (!salaryForm.amount || isNaN(salaryForm.amount))
+    //   newErrors.amount = "Please enter a valid amount";
     if (salaryForm.pay_type === "online" && !salaryForm.transaction_id)
       newErrors.pay_type = "Transaction ID is required for online payments";
 
