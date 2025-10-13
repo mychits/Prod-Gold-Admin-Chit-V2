@@ -588,7 +588,7 @@ const fileName = `${reportType}_${date}`;
         )}
       </div>
 
-      <div className="border rounded-lg overflow-x-auto whitespace-nowrap">
+      <div className="border rounded-lg overflow-hidden whitespace-normal">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
