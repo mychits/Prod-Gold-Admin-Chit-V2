@@ -132,12 +132,17 @@ const subMenus = [
     category: "Employee",
     color: "from-blue-500 to-blue-600"
   },
+  // {
+  //   title: "Employee Attendance Report",
+  //   link: "/reports/employee-attendance-report",
+  //   Icon: SlCalender,
+  //   category: "Employee",
+  //   color: "from-indigo-500 to-indigo-600"
+  // },
   {
-    title: "Employee Attendance Report",
-    link: "/reports/employee-attendance-report",
+    title: "Monthly Attendance Report",
+    link: "/reports/employee-monthly-report",
     Icon: SlCalender,
-    category: "Employee",
-    color: "from-indigo-500 to-indigo-600"
   },
  
 ];
