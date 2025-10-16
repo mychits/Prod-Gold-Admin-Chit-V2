@@ -235,7 +235,8 @@ const PayoutSalary = () => {
           "N/A",
         from_date: payment.payout_metadata?.date_range?.from?.split("T")[0],
         to_date: payment.payout_metadata?.date_range?.to?.split("T")[0],
-        amount: payment.payout_metadata?.total_paid_amount || payment.amount || 0,
+        total_salary: payment.payout_metadata?.total_salary  || 0,
+        total_paid_amount: payment.payout_metadata?.total_paid_amount  || 0,
         pay_type: payment.payout_metadata?.pay_type || payment.pay_type || "N/A",
         receipt_no: payment.payout_metadata?.receipt_no || payment.receipt_no || "-",
         note: payment.payout_metadata?.note || payment.note || "-",
@@ -429,7 +430,8 @@ const PayoutSalary = () => {
     { key: "id", header: "SL. NO" },
     { key: "pay_date", header: "Pay Date" },
     { key: "agent_name", header: "Agent" },
-    { key: "amount", header: "Paid Amount (₹)" }, // Updated header
+    { key: "total_paid_amount", header: "Total Paid Amount (₹)" }, // Updated header
+    { key: "total_salary", header: "Total Salary Amount (₹)" }, // Updated header
     { key: "pay_type", header: "Payment Mode" },
     { key: "receipt_no", header: "Receipt No" },
     { key: "from_date", header: "From Date" },
