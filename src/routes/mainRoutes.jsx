@@ -111,6 +111,7 @@ import EmployeeMenu from "../pages/EmployeeMenu";
 import PaymentMenu from "../pages/PaymentMenu";
 import CustomerLoanReport from "../pages/CustomerLoanReport";
 import CollectionAreaReport from "../pages/CollectionAreaReport";
+import PayoutSalaryReport from "../pages/PayoutSalaryReport";
 const mainRoutes = createBrowserRouter([
   {
     path: "/",
@@ -595,6 +596,7 @@ const mainRoutes = createBrowserRouter([
         path: "due-report",
         element: <DueReport />,
       },
+      {path: "payout-salary-report", element: <PayoutSalaryReport/>},
     ],
   },
   {

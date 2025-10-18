@@ -22,6 +22,8 @@ const PayoutSalary = () => {
   const [adminId, setAdminId] = useState("");
   const [absent, setAbsent] = useState(0);
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [existingOtherPayments,setIsExistingOtherPayments] = useState("");
+  const [alreadyPaidSalaryAmount,setAlreadyPaidSalaryAmount] = useState("");
   const [alertConfig, setAlertConfig] = useState({
     visibility: false,
     message: "Something went wrong!",
@@ -109,7 +111,7 @@ const PayoutSalary = () => {
     }
   }, [selectedMonth, dateMode]);
   
-  const checkIfSalaryAlreadyPaid = async (empId, fromDate, toDate) => {
+   const checkIfSalaryAlreadyPaid = async (empId, fromDate, toDate) => {
     try {
       const response = await API.get("/salary/get-salary-payments", {
         params: {
@@ -130,7 +132,24 @@ const PayoutSalary = () => {
                  paymentDate <= new Date(formatDate(toDate));
         })
         .reduce((sum, p) => sum + parseFloat(p.payout_metadata?.total_paid_amount || 0), 0);
-        
+         const otherPay = salaryArray
+        .filter((p) => {
+          const pAgentId = p.employee_id?._id ? String(p.employee_id._id) : String(p.employee_id);
+          const paymentDate = new Date(formatDate(p.payout_metadata?.date_range?.from));
+          return pAgentId === String(empId) && 
+                 paymentDate >= new Date(formatDate(fromDate)) && 
+                 paymentDate <= new Date(formatDate(toDate));
+        })
+        .reduce((sum, p) => sum + parseFloat(p.payout_metadata?.other_payments || 0), 0); 
+        const sPay = salaryArray
+        .filter((p) => {
+          const pAgentId = p.employee_id?._id ? String(p.employee_id._id) : String(p.employee_id);
+          const paymentDate = new Date(formatDate(p.payout_metadata?.date_range?.from));
+          return pAgentId === String(empId) && 
+                 paymentDate >= new Date(formatDate(fromDate)) && 
+                 paymentDate <= new Date(formatDate(toDate));
+        })
+        .reduce((sum, p) => sum + parseFloat(p.payout_metadata?.total_salary || 0), 0); 
       const alreadyPaid = paidAmount > 0;
       
       // Check if this is a calculation for existing payment
@@ -140,11 +159,16 @@ const PayoutSalary = () => {
         
       setIsCalculationForExistingPayment(isCalculationForExisting);
       setIsSalaryAlreadyPaid(alreadyPaid);
+      setAlreadyPaidSalaryAmount(sPay);
+      setIsExistingOtherPayments(otherPay || "0.0");
       return {
         isPaid: alreadyPaid,
         totalPaid: paidAmount
       };
     } catch (error) {
+      setAlreadyPaidSalaryAmount("0.0")
+      setSalaryCalculationDetails("0.0");
+
       console.error("Error checking existing payments:", error);
       return {
         isPaid: false,
@@ -322,38 +346,90 @@ const PayoutSalary = () => {
         receipt_no: payment.payout_metadata?.receipt_no || payment.receipt_no || "-",
         note: payment.payout_metadata?.note || payment.note || "-",
         disbursed_by: payment.payout_metadata?.disbursed_by || payment.disbursed_by || "Admin",
+        // action: (
+        //   <div className="flex justify-center gap-2">
+        //     <Dropdown
+        //       trigger={["click"]}
+        //       menu={{
+        //         items: [
+        //           {
+        //             key: "1",
+        //             label: (
+        //               <div className="text-green-600" onClick={(e) => e.stopPropagation()}>
+        //                 <SalarySlipPrint payment={payment} />
+        //               </div>
+        //             ),
+        //           },
+        //           {
+        //             key: "2",
+        //             label: (
+        //               <div 
+        //                 className="text-blue-600 cursor-pointer"
+        //                 onClick={() => {
+        //                   setEditingSalary(payment);
+        //                   setIsEditing(true);
+        //                 }}
+        //               >
+        //                 Edit Payment
+        //               </div>
+        //             ),
+        //           },
+        //         ],
+        //       }}
+        //     >
+        //       <IoMdMore className="text-bold" />
+        //     </Dropdown>
+        //   </div>
+        // ),
         action: (
           <div className="flex justify-center gap-2">
             <Dropdown
               trigger={["click"]}
-              menu={{
-                items: [
-                  {
-                    key: "1",
-                    label: (
-                      <div className="text-green-600" onClick={(e) => e.stopPropagation()}>
-                        <SalarySlipPrint payment={payment} />
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "2",
-                    label: (
-                      <div 
-                        className="text-blue-600 cursor-pointer"
-                        onClick={() => {
-                          setEditingSalary(payment);
-                          setIsEditing(true);
-                        }}
-                      >
-                        Edit Payment
-                      </div>
-                    ),
-                  },
-                ],
-              }}
+              dropdownRender={(menu) => (
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-2 min-w-[240px]">
+                  <div
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200 group"
+                    onClick={() => {
+                      setEditingSalary(payment);
+                      setIsEditing(true);
+                    }}
+                  >
+                    <span className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors duration-200">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </span>
+                    <div className="flex flex-col flex-1">
+                      <span className="text-sm font-medium text-gray-700">Edit Payment</span>
+                      <span className="text-xs text-gray-500">Modify payment details</span>
+                    </div>
+                  </div>
+                  <div 
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200 group"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <span className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors duration-200">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                      </svg>
+                    </span>
+                    <div className="flex flex-col flex-1">
+                      <SalarySlipPrint payment={payment} />
+                    </div>
+                  </div>
+                  
+                  <div className="h-px bg-gray-200 my-2 mx-2"></div>
+                  
+                  
+                </div>
+              )}
+              placement="bottomRight"
             >
-              <IoMdMore className="text-bold" />
+              <div className="cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200 hover:shadow-sm">
+                <IoMdMore className="text-xl text-gray-600" />
+              </div>
             </Dropdown>
           </div>
         ),
@@ -794,6 +870,7 @@ const PayoutSalary = () => {
                               const fd = formatDate(salaryForm.from_date);
                               const td = formatDate(salaryForm.to_date);
                               calculateProRatedSalary(fd, td, employeeDetails.salary, salaryForm.agent_id);
+                              
                             }
                           }}
                         >
@@ -803,8 +880,7 @@ const PayoutSalary = () => {
                     )}
                   </div>
                   
-                  {/* Payment Already Exists Warning */}
-                  {isSalaryAlreadyPaid && !isCalculationForExistingPayment && (
+                   {isSalaryAlreadyPaid && !isCalculationForExistingPayment && (
                     <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-4">
                       <div className="flex items-start">
                         <InfoCircleOutlined className="text-yellow-500 mt-1 mr-2" />
@@ -813,9 +889,9 @@ const PayoutSalary = () => {
                           <p className="text-xs text-yellow-600 mt-1">This salary period has already been processed.</p>
                           
                           <div className="mt-3 grid grid-cols-3 gap-3">
-                            <div className="bg-white p-3 rounded-lg border border-yellow-100">
+                           <div className="bg-white p-3 rounded-lg border border-yellow-100">
                               <p className="text-xs text-yellow-700 font-medium">Salary Amount</p>
-                              <p className="text-lg font-bold text-yellow-900">₹{calculatedSalary || "0.00"}</p>
+                              <p className="text-lg font-bold text-yellow-900">₹{alreadyPaidSalaryAmount || "0.0"}</p>
                             </div>
                             <div className="bg-white p-3 rounded-lg border border-yellow-100">
                               <p className="text-xs text-yellow-700 font-medium">Already Paid</p>
@@ -823,12 +899,12 @@ const PayoutSalary = () => {
                             </div>
                             <div className="bg-white p-3 rounded-lg border border-yellow-100">
                               <p className="text-xs text-yellow-700 font-medium">Other Payments</p>
-                              <p className="text-lg font-bold text-yellow-900">₹{otherPayments || "0.00"}</p>
+                              <p className="text-lg font-bold text-yellow-900">₹{existingOtherPayments || "0.00"}</p>
                             </div>
                           </div>
                           
                           <div className="mt-3 pt-3 border-t border-yellow-200">
-                            <p className="text-sm font-semibold text-yellow-800">Total Amount: ₹{parseFloat(alreadyPaid) + (parseFloat(otherPayments) || 0)}</p>
+                            <p className="text-sm font-semibold text-yellow-800">Total Amount: ₹{parseFloat(alreadyPaid) + (parseFloat(existingOtherPayments) || 0)}</p>
                           </div>
                         </div>
                       </div>
@@ -1091,7 +1167,7 @@ const PayoutSalary = () => {
                     >
                       Cancel
                     </button>
-                    <button
+                     {!isSalaryAlreadyPaid &&(  <button
                       type="submit"
                       disabled={isLoading}
                       className={`px-5 py-2.5 rounded-lg text-white font-medium transition-colors ${
@@ -1111,7 +1187,7 @@ const PayoutSalary = () => {
                       ) : (
                         "Save Payment"
                       )}
-                    </button>
+                    </button>)}
                   </div>
                 </>
               )}

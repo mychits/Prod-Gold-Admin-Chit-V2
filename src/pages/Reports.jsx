@@ -168,6 +168,13 @@ const subMenus = [
     Icon: BsCalendarDate ,
     color: "from-indigo-500 to-indigo-600"
   },
+  {
+    title: "Payout Salary Report",
+    link: "/reports/payout-salary-report",
+    category: "Employee",
+    Icon: BsCalendarDate ,
+    color: "from-indigo-500 to-indigo-600"
+  },
  
 ];
 
