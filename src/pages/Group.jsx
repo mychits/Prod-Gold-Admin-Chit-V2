@@ -278,7 +278,7 @@ const Group = () => {
       newErrors.start_date = "Start Date is required";
     }
     if(!data.app_display_vacany_seat){
-      newErrors.app_display_vacany_seat = "Please Enter Vacant Seat" 
+      newErrors.app_display_vacany_seat = "Please Enter Display Vacant Seat" 
     }
 
     if (formData.end_date && !data.end_date) {
@@ -496,7 +496,7 @@ const Group = () => {
     { key: "members", header: "Group Members" },
     { key: "installment", header: "Group Installment" },
     { key: "daily_installment", header: "Daily Installment" },
-    {key: "app_display_vacany_seat", header: "Vacant Seat"},
+    {key: "app_display_vacany_seat", header: "App Display Vacany Seat"},
     { key: "weekly_installment", header: "Weekly Installment" },
     { key: "monthly_installment", header: "Monthly Installment" },
     { key: "relationship_manager", header: "Relationship Manager" },
@@ -658,7 +658,7 @@ const Group = () => {
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="date"
                   >
-                    Vacant Seat <span className="text-red-500 ">*</span>
+                    App Display Vacany Seat <span className="text-red-500 ">*</span>
                   </label>
                   <input
                     type="number"
@@ -666,7 +666,7 @@ const Group = () => {
                     value={formData.app_display_vacany_seat}
                     onChange={handleChange}
                     id="text"
-                    placeholder="Enter Vacant Seat"
+                    placeholder="Enter App Display Vacany Seat"
                     required
                     className={`no-spinner bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
                   />
@@ -1130,7 +1130,7 @@ const Group = () => {
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="date"
                   >
-                    Vacant Seat <span className="text-red-500 ">*</span>
+                    App Display Vacany Seat <span className="text-red-500 ">*</span>
                   </label>
                   <input
                     type="number"
@@ -1138,7 +1138,7 @@ const Group = () => {
                     value={updateFormData.app_display_vacany_seat}
                     onChange={handleInputChange}
                     id="text"
-                    placeholder="Enter vacant seat"
+                    placeholder="Enter App Display Vacany Seat"
                     required
                     className={`no-spinner bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
                   />

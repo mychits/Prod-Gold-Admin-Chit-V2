@@ -114,6 +114,7 @@ import CollectionAreaReport from "../pages/CollectionAreaReport";
 import PayoutSalaryReport from "../pages/PayoutSalaryReport";
 import TargetMenu from "../pages/TargetMenu";
 import EnrollmentMenu from "../pages/EnrollmentView";
+import GroupMenu from "../pages/GroupMenu";
 const mainRoutes = createBrowserRouter([
   {
     path: "/",
@@ -150,7 +151,7 @@ const mainRoutes = createBrowserRouter([
   },
 
   {
-    path: "/group",
+    path: "/group-menu/group",
     element: (
       <ProtectedRoute>
         <Group />
@@ -283,12 +284,20 @@ const mainRoutes = createBrowserRouter([
     element: <Guarantor />,
   },
   {
-    path: "/filter-groups",
+    path: "/group-menu/filter-groups",
     element: (
       <ProtectedRoute>
         <FilterGroups />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/group-menu",
+    element: (<ProtectedRoute>
+      <GroupMenu/>
+      </ProtectedRoute>
+      ),
+
   },
   {
     path: "/employee-profile",

@@ -67,7 +67,7 @@ const MenuSidebar = [
     title: "Groups ",
     spacing: true,
     icon: <TbCategoryPlus />,
-    link: "/group",
+    link: "/group-menu",
   },
   {
     id: ids.three,
@@ -289,22 +289,22 @@ const MenuSidebar = [
         
         ],
       },
-      {
-        id: "#2",
-        title: "Groups",
-        icon: <MdOutlineGroups size="25" />,
-        hider: true,
-        newTab: true,
-        submenu: true,
-        submenuItems: [
-          {
-            id: ids.sixteen,
-            title: "Mobile Access Groups",
-            icon: <FaFilter size={18} />,
-            link: "/filter-groups",
-          },
-        ],
-      },
+      // {
+      //   id: "#2",
+      //   title: "Groups",
+      //   icon: <MdOutlineGroups size="25" />,
+      //   hider: true,
+      //   newTab: true,
+      //   submenu: true,
+      //   submenuItems: [
+      //     {
+      //       id: ids.sixteen,
+      //       title: "Mobile Access Groups",
+      //       icon: <FaFilter size={18} />,
+      //       link: "/filter-groups",
+      //     },
+      //   ],
+      // },
       {
         id: "#3",
         title: "Employee",

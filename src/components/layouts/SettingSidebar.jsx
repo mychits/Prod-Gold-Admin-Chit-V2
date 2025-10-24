@@ -45,7 +45,7 @@ const MenuSidebar = [
           {
             title: "Mobile Access",
             icon: <MdAppSettingsAlt size={20} />,
-            link: "/lead-setting/app-settings/groups/mobile-access",
+            link: "/group-menu/filter-groups",
           },
           {
             title: "Dream Asset",
