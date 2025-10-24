@@ -8,7 +8,7 @@ const TargetMenu = () => {
   const targetCategories = [
     {
       id: 1,
-      title: "Targets",
+      title: "Add/Edit Targets",
       description: "Manage and update Employee Targets",
       icon: <TbTargetArrow className="w-8 h-8" />,
       color: "from-blue-600 to-blue-700",
