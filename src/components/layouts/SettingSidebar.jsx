@@ -135,6 +135,17 @@ const MenuSidebar = [
   //     // },
   //   ],
   // },
+
+    {
+  title: "Penalty Management",
+  icon: <RiMoneyRupeeCircleFill />,
+  submenu: true,
+  submenuItems: [
+    { title: "Penalty Settings", icon: <TiSpanner size={20} />, link: "/penalty-settings" },
+    { title: "Penalty Monitor", icon: <TbGraph size={20} />, link: "/penalty-monitor" },
+  ],
+},
+
   {
     title: "Profile",
     spacing: true,

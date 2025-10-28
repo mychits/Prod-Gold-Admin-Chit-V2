@@ -115,6 +115,10 @@ import PayoutSalaryReport from "../pages/PayoutSalaryReport";
 import TargetMenu from "../pages/TargetMenu";
 import EnrollmentMenu from "../pages/EnrollmentView";
 import GroupMenu from "../pages/GroupMenu";
+
+import PenaltySettings from "../pages/PenaltySettings";
+import PenaltyMonitor from "../pages/PenaltyMonitor";
+
 const mainRoutes = createBrowserRouter([
   {
     path: "/",
@@ -584,6 +588,17 @@ const mainRoutes = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
+    {
+    path:"/penalty-settings",
+    element:<PenaltySettings/>
+  },
+
+   {
+    path:"/penalty-monitor",
+    element:<PenaltyMonitor/>
+  },
+
     {
     path: "/gift-received",
     element: <CustomerRewards/>
