@@ -73,22 +73,22 @@ const MenuSidebar = [
     id: ids.three,
     title: "Customers",
     icon: <IoIosPersonAdd />,
-   // link: "/user",
-    submenu: true,
-    submenuItems: [
-      {
-        id: "$101#",
-        title: "Customers",
-        icon: <IoIosPersonAdd size={20} />,
-        link: "/user",
-      },
-      {
-        id: "&*&",
-        title: "Unverified Customers",
-        icon: <MdCancel size={25} />,
-        link: "/un-approved-customer",
-      },
-    ],
+   link: "/customer-menu",
+    // submenu: true,
+    // submenuItems: [
+    //   {
+    //     id: "$101#",
+    //     title: "Customers",
+    //     icon: <IoIosPersonAdd size={20} />,
+    //     link: "/user",
+    //   },
+    //   {
+    //     id: "&*&",
+    //     title: "Unverified Customers",
+    //     icon: <MdCancel size={25} />,
+    //     link: "/un-approved-customer",
+    //   },
+    // ],
     
   },
   ,
@@ -130,16 +130,16 @@ const MenuSidebar = [
     id: "$9856",
     title: "Legals ",
     icon: <FaHandshake />,
-   
-     submenu: true,
-    submenuItems: [
-  {
-    id: "$67",
-    title: "Guarantor ",
-    icon: <FaHandshake />,
-    link: "/guarantor",
-  },
-],
+    link: "/legals-menu"
+//      submenu: true,
+//     submenuItems: [
+//   {
+//     id: "$67",
+//     title: "Guarantor ",
+//     icon: <FaHandshake />,
+//     link: "/guarantor",
+//   },
+// ],
   },
 
   {
@@ -199,22 +199,22 @@ const MenuSidebar = [
     id: "$7865",
     title: "Other Services",
     icon: <GiTakeMyMoney />,
-   // link: "/user",
-    submenu: true,
-    submenuItems: [
-  {
-    id: "$8",
-    title: "Loans",
-    icon: <GiTakeMyMoney size={20} />,
-    link: "/loan",
-  },
-  {
-    id: "$9",
-    title: "Pigme",
-    icon: <PiCalculatorBold size={20} />,
-    link: "/pigme",
-  },
-],
+   link: "/other-service-menu",
+//     submenu: true,
+//     submenuItems: [
+//   {
+//     id: "$8",
+//     title: "Loans",
+//     icon: <GiTakeMyMoney size={20} />,
+//     link: "/loan",
+//   },
+//   {
+//     id: "$9",
+//     title: "Pigme",
+//     icon: <PiCalculatorBold size={20} />,
+//     link: "/pigme",
+//   },
+// ],
 },
   {
     id: ids.eleven,

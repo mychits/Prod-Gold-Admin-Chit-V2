@@ -118,6 +118,9 @@ import GroupMenu from "../pages/GroupMenu";
 
 import PenaltySettings from "../pages/PenaltySettings";
 import PenaltyMonitor from "../pages/PenaltyMonitor";
+import UserMenu from "../pages/UserMenu"
+import OtherServicesMenu from "../pages/OtherServicesMenu";
+import LegalsMenu from "../pages/LegalsMenu";
 
 const mainRoutes = createBrowserRouter([
   {
@@ -255,7 +258,7 @@ const mainRoutes = createBrowserRouter([
   },
   ,
   {
-    path: "/un-approved-customer",
+    path: "/customer-menu/un-approved-customer",
     element: (
       <ProtectedRoute>
         <UnApprovedCustomer />
@@ -284,8 +287,12 @@ const mainRoutes = createBrowserRouter([
     element: <EnrollmentRequestForm />,
   },
   {
-    path: "/guarantor",
+    path: "/legals-menu/guarantor",
     element: <Guarantor />,
+  },
+   {
+    path: "/legals-menu",
+    element: <LegalsMenu />,
   },
   {
     path: "/group-menu/filter-groups",
@@ -308,6 +315,14 @@ const mainRoutes = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <EmployeeProfile />
+      </ProtectedRoute>
+    ),
+  },
+   {
+    path: "/customer-menu",
+    element: (
+      <ProtectedRoute>
+        <UserMenu />
       </ProtectedRoute>
     ),
   },
@@ -366,7 +381,7 @@ const mainRoutes = createBrowserRouter([
     ),
   },
   {
-    path: "/user",
+    path: "/customer-menu/user",
     element: (
       <ProtectedRoute>
         <User />
@@ -382,7 +397,15 @@ const mainRoutes = createBrowserRouter([
     ),
   },
   {
-    path: "/loan",
+    path: "/other-service-menu/",
+    element: (
+      <ProtectedRoute>
+        <OtherServicesMenu />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/other-service-menu/loan",
     element: (
       <ProtectedRoute>
         <Loan />
@@ -390,7 +413,7 @@ const mainRoutes = createBrowserRouter([
     ),
   },
   {
-    path: "/pigme",
+    path: "/other-service-menu/pigme",
     element: (
       <ProtectedRoute>
         <Pigme />

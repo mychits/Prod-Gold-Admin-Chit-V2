@@ -36,13 +36,13 @@ const data = [
     icon: <MdAppSettingsAlt size={25} />,
     iconColor: "bg-green-700",
   },
-  {
-    title: "Agent Targets",
-    color: "bg-orange-200",
-    path: "/target",
-    icon: <GoGraph size={35} />,
-    iconColor: "bg-orange-700",
-  },
+  // {
+  //   title: "Agent Targets",
+  //   color: "bg-orange-200",
+  //   path: "/target",
+  //   icon: <GoGraph size={35} />,
+  //   iconColor: "bg-orange-700",
+  // },
 ];
 
 const LeadSettings = () => {
