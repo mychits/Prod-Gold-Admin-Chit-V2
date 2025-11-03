@@ -26,7 +26,7 @@ const UserMenu = () => {
       color: "from-amber-600 to-amber-700",
       lightColor: "bg-amber-50",
       borderColor: "border-amber-200",
-      href: "/staff-menu/employee-menu",
+      href: "/customer-menu/un-approved-customer",
       stats: "Unverified Customers",
     },
   ];

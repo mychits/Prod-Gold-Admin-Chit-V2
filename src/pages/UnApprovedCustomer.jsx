@@ -643,7 +643,10 @@ const UnApprovedCustomer = () => {
             }
           />
           <div className="flex-grow p-7">
-            <div className="mt-6 mb-8"></div>
+            
+            <div className="mt-6 mb-8">
+              <h1 className="text-2xl font-semibold">Unverified Customers</h1>
+            </div>
             {TableUsers?.length > 0 && !isLoading ? (
               <DataTable
                 catcher="_id"
