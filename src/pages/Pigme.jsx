@@ -5,14 +5,17 @@ import Modal from "../components/modals/Modal";
 import api from "../instance/TokenInstance";
 import DataTable from "../components/layouts/Datatable";
 import CustomAlertDialog from "../components/alerts/CustomAlertDialog";
-import { Dropdown } from "antd";
+import { Dropdown, Select } from "antd";
 import { IoMdMore } from "react-icons/io";
 import Navbar from "../components/layouts/Navbar";
 import filterOption from "../helpers/filterOption";
 import { FaCalculator } from "react-icons/fa";
 import CircularLoader from "../components/loaders/CircularLoader";
+import { fieldSize } from "../data/fieldSize";
 const Pigme = () => {
   const [users, setUsers] = useState([]);
+  const [agents, setAgents] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [pigmeCustomers, setPigmeCustomers] = useState([]);
   const [tableBorrowers, setTableBorrowers] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -21,8 +24,8 @@ const Pigme = () => {
   const [currentCustomer, setCurrentCustomer] = useState(null);
   const [currentUpdateCustomer, setCurrentUpdateCustomer] = useState(null);
   const [searchText, setSearchText] = useState("");
-    const [reloadTrigger, setReloadTrigger] = useState(0);
-  const [isLoading,setIsLoading] = useState(false);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const onGlobalSearchChangeHandler = (e) => {
     const { value } = e.target;
     setSearchText(value);
@@ -42,6 +45,10 @@ const Pigme = () => {
     start_date: "",
     end_date: "",
     note: "",
+    referred_customer: "",
+    referred_employee: "",
+    referred_type: "",
+    referred_agent: "",
   });
   const [errors, setErrors] = useState({});
 
@@ -53,10 +60,13 @@ const Pigme = () => {
     start_date: "",
     end_date: "",
     note: "",
+    referred_customer: "",
+    referred_employee: "",
+    referred_type: "",
+    referred_agent: "",
   });
 
-
-    useEffect(() => {
+  useEffect(() => {
     const fetchCustomers = async () => {
       try {
         const response = await api.get("/user/get-user");
@@ -69,6 +79,29 @@ const Pigme = () => {
     };
     fetchCustomers();
   }, [reloadTrigger]);
+
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const response = await api.get("/agent/get");
+        setAgents(response.data?.agent);
+      } catch (err) {
+        console.error("Failed to fetch Leads", err);
+      }
+    };
+    fetchAgents();
+  }, []);
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await api.get("/agent/get-employee");
+        setEmployees(response?.data?.employee);
+      } catch (error) {
+        console.error("failed to fetch employees", error);
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   useEffect(() => {
     const fetchBorrowers = async () => {
@@ -88,6 +121,17 @@ const Pigme = () => {
           start_date: pigmeCustomer?.start_date?.split("T")[0],
           end_date: pigmeCustomer?.end_date?.split("T")[0],
           note: pigmeCustomer?.note,
+          referred_type: pigmeCustomer?.referred_type,
+          referred_by:
+            pigmeCustomer?.referred_employee?.name &&
+            pigmeCustomer?.referred_employee?.phone_number
+              ? `${pigmeCustomer.referred_employee.name} | ${pigmeCustomer?.referred_employee?.phone_number}`
+              : pigmeCustomer?.referred_agent?.name
+              ? `${pigmeCustomer.referred_agent.name} | ${pigmeCustomer.referred_agent.phone_number}`
+              : pigmeCustomer?.referred_customer?.full_name &&
+                pigmeCustomer?.referred_customer?.phone_number
+              ? `${pigmeCustomer.referred_customer.full_name} | ${pigmeCustomer?.referred_customer?.phone_number}`
+              : "N/A",
           action: (
             <div className="flex justify-center gap-2" key={pigmeCustomer._id}>
               <Dropdown
@@ -131,13 +175,13 @@ const Pigme = () => {
         setTableBorrowers(formattedData);
       } catch (error) {
         console.error("Error fetching group data:", error);
-      }finally{
+      } finally {
         setIsLoading(false);
       }
     };
     fetchBorrowers();
   }, [reloadTrigger]);
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -159,13 +203,9 @@ const Pigme = () => {
       newErrors.maturity_period = "Maturity Period is Required";
     }
 
-     if (
-      !data.payable_amount 
-    ) {
+    if (!data.payable_amount) {
       newErrors.payable_amount = "Payable Amount is required";
-    }
-   
-   else if (
+    } else if (
       !data.payable_amount ||
       isNaN(data.payable_amount) ||
       data.payable_amount <= 0
@@ -188,7 +228,6 @@ const Pigme = () => {
     e.preventDefault();
     const isValid = validateForm("addCustomer");
     try {
-    
       if (isValid) {
         const response = await api.post("/pigme/add-pigme-customer", formData, {
           headers: {
@@ -212,14 +251,16 @@ const Pigme = () => {
           start_date: "",
           end_date: "",
           note: "",
+          referred_customer: "",
+          referred_employee: "",
+          referred_type: "",
+          referred_agent: "",
         });
-      } 
+      }
     } catch (error) {
       console.error("Error adding Customer:", error);
     }
   };
-
-
 
   const handleDeleteModalOpen = async (pigmeId) => {
     try {
@@ -246,12 +287,40 @@ const Pigme = () => {
         start_date: formattedStartDate,
         end_date: formattedEndDate,
         note: response?.data?.note,
+        referred_employee: response?.data?.referred_employee?._id || "",
+        referred_customer: response?.data?.referred_customer?._id || "",
+        referred_agent: response?.data?.referred_agent?._id || "",
+        referred_type: response?.data?.referred_type || "",
       });
       setShowModalUpdate(true);
       setErrors({});
     } catch (error) {
       console.error("Error fetching pigme Customer by ID:", error);
     }
+  };
+
+  const handleAntDSelect = (field, value) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }));
+
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [field]: "",
+    }));
+  };
+  const handleAntInputDSelect = (field, value) => {
+    console.info(field, value, "hfjgdfgdfg");
+    setUpdateFormData((prevData) => ({
+      ...prevData,
+      referred_employee: "",
+      referred_agent: "",
+      referred_customer: "",
+      [field]: value,
+    }));
+
+    setErrors({ ...errors, [field]: "" });
   };
 
   const handleInputChange = (e) => {
@@ -304,6 +373,8 @@ const Pigme = () => {
     { key: "customer_name", header: "Customer Name" },
     { key: "maturity_period", header: "Maturity Period" },
     { key: "maturity_interest", header: "Maturity Interest" },
+    { key: "referred_type", header: "Referred Type" },
+    { key: "referred_by", header: "Referred By" },
     { key: "start_date", header: "Start Date" },
     { key: "end_date", header: "Due Date" },
     { key: "note", header: "Note" },
@@ -317,7 +388,7 @@ const Pigme = () => {
           visibility={true}
           onGlobalSearchChangeHandler={onGlobalSearchChangeHandler}
         />
-          <CustomAlertDialog
+        <CustomAlertDialog
           type={alertConfig.type}
           isVisible={alertConfig.visibility}
           message={alertConfig.message}
@@ -344,14 +415,22 @@ const Pigme = () => {
               </div>
             </div>
 
-          {(tableBorrowers?.length>0 && !isLoading) ?  (<DataTable
-              catcher="_id"
-              updateHandler={handleUpdateModalOpen}
-              data={filterOption(tableBorrowers, searchText)}
-              columns={columns}
-              exportedPdfName="Pigme"
-              exportedFileName={`Pigme.csv`}
-            />):<CircularLoader isLoading={isLoading} data="Pigme Data" failure={tableBorrowers?.length<=0}/>}
+            {tableBorrowers?.length > 0 && !isLoading ? (
+              <DataTable
+                catcher="_id"
+                updateHandler={handleUpdateModalOpen}
+                data={filterOption(tableBorrowers, searchText)}
+                columns={columns}
+                exportedPdfName="Pigme"
+                exportedFileName={`Pigme.csv`}
+              />
+            ) : (
+              <CircularLoader
+                isLoading={isLoading}
+                data="Pigme Data"
+                failure={tableBorrowers?.length <= 0}
+              />
+            )}
           </div>
         </div>
         <Modal isVisible={showModal} onClose={() => setShowModal(false)}>
@@ -364,7 +443,7 @@ const Pigme = () => {
                   className="block mb-2 text-sm font-medium text-gray-900"
                   htmlFor="customer"
                 >
-                  Select customer Name  <span className="text-red-500 ">*</span>
+                  Select customer Name <span className="text-red-500 ">*</span>
                 </label>
                 <select
                   name="customer"
@@ -385,13 +464,13 @@ const Pigme = () => {
                   <p className="text-red-500 text-sm mt-1">{errors.customer}</p>
                 )}
               </div>
-
               <div>
                 <label
                   className="block mb-2 text-sm font-medium text-gray-900"
                   htmlFor="maturity_period"
                 >
-                  Select Maturity period  <span className="text-red-500 ">*</span>
+                  Select Maturity period{" "}
+                  <span className="text-red-500 ">*</span>
                 </label>
                 <select
                   name="maturity_period"
@@ -416,6 +495,146 @@ const Pigme = () => {
               </div>
 
               <div className="flex flex-row justify-between space-x-4">
+                <div className="w-full">
+                  <label className="block mb-2 text-sm font-semibold text-gray-800">
+                    Referred Type <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full`}
+                    placeholder="Select Referred Type"
+                    popupMatchSelectWidth={false}
+                    showSearch
+                    name="referred_type"
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    value={formData?.referred_type || undefined}
+                    onChange={(value) =>
+                      handleAntDSelect("referred_type", value)
+                    }
+                  >
+                    {[
+                      "Self Joining",
+                      "Customer",
+                      "Employee",
+                      "Agent",
+                      "Others",
+                    ].map((refType) => (
+                      <Select.Option key={refType} value={refType}>
+                        {refType}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
+                {formData.referred_type === "Customer" && (
+                  <div className="w-full">
+                    <label
+                      className="block mb-2 text-sm font-medium text-gray-900"
+                      htmlFor="category"
+                    >
+                      Select Referred Customer{" "}
+                      <span className="text-red-500 ">*</span>
+                    </label>
+
+                    <Select
+                      className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full `}
+                      placeholder="Select Or Search Referred Customer"
+                      popupMatchSelectWidth={false}
+                      showSearch
+                      name="referred_customer"
+                      filterOption={(input, option) =>
+                        option.children
+                          .toString()
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                      value={formData?.referred_customer || undefined}
+                      onChange={(value) =>
+                        handleAntDSelect("referred_customer", value)
+                      }
+                    >
+                      {users.map((user) => (
+                        <Select.Option key={user._id} value={user._id}>
+                          {user.full_name} |{" "}
+                          {user.phone_number ? user.phone_number : "No Number"}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+                {formData.referred_type === "Agent" && (
+                  <div className="w-full">
+                    <label className="block mb-2 text-sm font-medium text-gray-900">
+                      Select Referred Agent{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <Select
+                      className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full `}
+                      placeholder="Select or Search Referred Agent"
+                      popupMatchSelectWidth={false}
+                      showSearch
+                      name="referred_agent"
+                      filterOption={(input, option) =>
+                        option.children
+                          .toString()
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                      value={formData.referred_agent || undefined}
+                      onChange={(value) =>
+                        handleAntDSelect("referred_agent", value)
+                      }
+                    >
+                      {agents.map((agent) => (
+                        <Select.Option key={agent._id} value={agent._id}>
+                          {agent.name} | {agent.phone_number}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+                {formData.referred_type === "Employee" && (
+                  <div className="w-full">
+                    <label
+                      className="block mb-2 text-sm font-medium text-gray-900"
+                      htmlFor="category"
+                    >
+                      Select Referred Employee{" "}
+                      <span className="text-red-500 ">*</span>
+                    </label>
+
+                    <Select
+                      className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full `}
+                      placeholder="Select Or Search Referred Employee"
+                      popupMatchSelectWidth={false}
+                      showSearch
+                      name="referred_employee"
+                      filterOption={(input, option) => {
+                        if (!option || !option.children) return false; // Ensure option and children exist
+
+                        return option.children
+                          .toString()
+                          .toLowerCase()
+                          .includes(input.toLowerCase());
+                      }}
+                      value={formData?.referred_employee || undefined}
+                      onChange={(value) =>
+                        handleAntDSelect("referred_employee", value)
+                      }
+                    >
+                      {employees.map((employee) => (
+                        <Select.Option key={employee._id} value={employee._id}>
+                          {employee.name}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-row justify-between space-x-4">
                 <div className="w-1/2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
@@ -433,14 +652,13 @@ const Pigme = () => {
                     required
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
                   />
-                
                 </div>
                 <div className="w-1/2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="payable_amount"
                   >
-                   Payable Amount  <span className="text-red-500 ">*</span>
+                    Payable Amount <span className="text-red-500 ">*</span>
                   </label>
                   <input
                     type="number"
@@ -453,7 +671,9 @@ const Pigme = () => {
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
                   />
                   {errors.payable_amount && (
-                    <p className="text-red-500 text-sm mt-1">{errors.payable_amount}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.payable_amount}
+                    </p>
                   )}
                 </div>
               </div>
@@ -464,7 +684,7 @@ const Pigme = () => {
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="start_date"
                   >
-                    Start Date  <span className="text-red-500 ">*</span>
+                    Start Date <span className="text-red-500 ">*</span>
                   </label>
                   <input
                     type="date"
@@ -487,7 +707,7 @@ const Pigme = () => {
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="end_date"
                   >
-                    End Date  <span className="text-red-500 ">*</span>
+                    End Date <span className="text-red-500 ">*</span>
                   </label>
                   <input
                     type="date"
@@ -587,7 +807,8 @@ const Pigme = () => {
                   className="block mb-2 text-sm font-medium text-gray-900"
                   htmlFor="maturity_period"
                 >
-                  Select Maturity period <span className="text-red-500 ">*</span>
+                  Select Maturity period{" "}
+                  <span className="text-red-500 ">*</span>
                 </label>
                 <select
                   name="maturity_period"
@@ -612,6 +833,146 @@ const Pigme = () => {
               </div>
 
               <div className="flex flex-row justify-between space-x-4">
+                <div className="w-full">
+                  <label className="block mb-2 text-sm font-semibold text-gray-800">
+                    Referred Type <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    className={`bg-gray-50 border border-gray-300 ${fieldSize.height} rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full`}
+                    placeholder="Select Referred Type"
+                    popupMatchSelectWidth={false}
+                    showSearch
+                    name="referred_type"
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    value={updateFormData?.referred_type || undefined}
+                    onChange={(value) =>
+                      handleAntInputDSelect("referred_type", value)
+                    }
+                  >
+                    {[
+                      "Self Joining",
+                      "Customer",
+                      "Employee",
+                      "Agent",
+                      "Others",
+                    ].map((refType) => (
+                      <Select.Option key={refType} value={refType}>
+                        {refType}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
+                {updateFormData.referred_type === "Customer" && (
+                  <div className="w-full">
+                    <label
+                      className="block mb-2 text-sm font-medium text-gray-900"
+                      htmlFor="category"
+                    >
+                      Select Referred Customer{" "}
+                      <span className="text-red-500 ">*</span>
+                    </label>
+
+                    <Select
+                      className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full `}
+                      placeholder="Select Or Search Referred Customer"
+                      popupMatchSelectWidth={false}
+                      showSearch
+                      name="referred_customer"
+                      filterOption={(input, option) =>
+                        option.children
+                          .toString()
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                      value={updateFormData?.referred_customer || undefined}
+                      onChange={(value) =>
+                        handleAntInputDSelect("referred_customer", value)
+                      }
+                    >
+                      {users.map((user) => (
+                        <Select.Option key={user._id} value={user._id}>
+                          {user.full_name} |{" "}
+                          {user.phone_number ? user.phone_number : "No Number"}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+                {updateFormData.referred_type === "Agent" && (
+                  <div className="w-full">
+                    <label className="block mb-2 text-sm font-medium text-gray-900">
+                      Select Referred Agent{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <Select
+                      className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full `}
+                      placeholder="Select or Search Referred Agent"
+                      popupMatchSelectWidth={false}
+                      showSearch
+                      name="referred_agent"
+                      filterOption={(input, option) =>
+                        option.children
+                          .toString()
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                      value={updateFormData.referred_agent || undefined}
+                      onChange={(value) =>
+                        handleAntInputDSelect("referred_agent", value)
+                      }
+                    >
+                      {agents.map((agent) => (
+                        <Select.Option key={agent._id} value={agent._id}>
+                          {agent.name} | {agent.phone_number}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+                {updateFormData.referred_type === "Employee" && (
+                  <div className="w-full">
+                    <label
+                      className="block mb-2 text-sm font-medium text-gray-900"
+                      htmlFor="category"
+                    >
+                      Select Referred Employee{" "}
+                      <span className="text-red-500 ">*</span>
+                    </label>
+
+                    <Select
+                      className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full `}
+                      placeholder="Select Or Search Referred Employee"
+                      popupMatchSelectWidth={false}
+                      showSearch
+                      name="referred_employee"
+                      filterOption={(input, option) => {
+                        if (!option || !option.children) return false; // Ensure option and children exist
+
+                        return option.children
+                          .toString()
+                          .toLowerCase()
+                          .includes(input.toLowerCase());
+                      }}
+                      value={updateFormData?.referred_employee || undefined}
+                      onChange={(value) =>
+                        handleAntInputDSelect("referred_employee", value)
+                      }
+                    >
+                      {employees.map((employee) => (
+                        <Select.Option key={employee._id} value={employee._id}>
+                          {employee.name} | {employee.phone_number}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-row justify-between space-x-4">
                 <div className="w-1/2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
@@ -629,14 +990,13 @@ const Pigme = () => {
                     required
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
                   />
-                
                 </div>
                 <div className="w-1/2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900"
                     htmlFor="payable_amount"
                   >
-                   Payable Amount <span className="text-red-500 ">*</span>
+                    Payable Amount <span className="text-red-500 ">*</span>
                   </label>
                   <input
                     type="number"
@@ -649,7 +1009,9 @@ const Pigme = () => {
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
                   />
                   {errors.payable_amount && (
-                    <p className="text-red-500 text-sm mt-1">{errors.payable_amount}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.payable_amount}
+                    </p>
                   )}
                 </div>
               </div>
@@ -742,7 +1104,7 @@ const Pigme = () => {
             </form>
           </div>
         </Modal>
-        
+
         <Modal
           isVisible={showModalDelete}
           onClose={() => {
@@ -771,7 +1133,8 @@ const Pigme = () => {
                     <span className="text-primary font-bold">
                       {currentCustomer.customer.full_name}
                     </span>{" "}
-                    to confirm deletion. <span className="text-red-500 ">*</span>
+                    to confirm deletion.{" "}
+                    <span className="text-red-500 ">*</span>
                   </label>
                   <input
                     type="text"

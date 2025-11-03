@@ -729,7 +729,7 @@ const Receipt = () => {
                     </div>
                   )}
                   <div className="mb-2">
-                    <label>Select Collection Agent</label>
+                    <label>Select Collection Employee</label>
 
                     <Select
                       showSearch
