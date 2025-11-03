@@ -445,7 +445,7 @@ const Pigme = () => {
                 >
                   Select customer Name <span className="text-red-500 ">*</span>
                 </label>
-                <select
+                {/* <select
                   name="customer"
                   id="customer"
                   value={formData.customer}
@@ -459,7 +459,28 @@ const Pigme = () => {
                   {users.map((user) => (
                     <option value={user._id}>{user.full_name}</option>
                   ))}
-                </select>
+                </select> */}
+                <Select
+                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  placeholder="Select Or Search  customer Name "
+                  popupMatchSelectWidth={false}
+                  showSearch
+                  name="customer"
+                  filterOption={(input, option) =>
+                    option.children
+                      .toString()
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  value={formData?.customer || undefined}
+                  onChange={(value) => handleAntDSelect("customer", value)}
+                >
+                  {users.map((user) => (
+                    <Select.Option key={user._id} value={user._id}>
+                      {user.full_name}
+                    </Select.Option>
+                  ))}
+                </Select>
                 {errors.customer && (
                   <p className="text-red-500 text-sm mt-1">{errors.customer}</p>
                 )}
@@ -472,7 +493,7 @@ const Pigme = () => {
                   Select Maturity period{" "}
                   <span className="text-red-500 ">*</span>
                 </label>
-                <select
+                {/* <select
                   name="maturity_period"
                   id="maturity_period"
                   value={formData.maturity_period}
@@ -486,7 +507,34 @@ const Pigme = () => {
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
-                </select>
+                </select> */}
+                <Select
+                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  placeholder="Select Or Search  customer Name "
+                  popupMatchSelectWidth={false}
+                  showSearch
+                  name="maturity_period"
+                  filterOption={(input, option) =>
+                    option.children
+                      .toString()
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  value={formData?.maturity_period || undefined}
+                  onChange={(value) =>
+                    handleAntDSelect("maturity_period", value)
+                  }
+                >
+                  
+                  {["Daily", "Weekly", "Monthly"].map((maturity) => (
+                    <Select.Option
+                      key={maturity}
+                      value={maturity?.toLowerCase()}
+                    >
+                      {maturity}
+                    </Select.Option>
+                  ))}
+                </Select>
                 {errors.maturity_period && (
                   <p className="text-red-500 text-sm mt-1">
                     {errors.maturity_period}
@@ -782,7 +830,7 @@ const Pigme = () => {
                 >
                   Select customer Name <span className="text-red-500 ">*</span>
                 </label>
-                <select
+                {/* <select
                   name="customer"
                   id="customer"
                   value={updateFormData.customer}
@@ -796,7 +844,28 @@ const Pigme = () => {
                   {users.map((user) => (
                     <option value={user._id}>{user.full_name}</option>
                   ))}
-                </select>
+                </select> */}
+                <Select
+                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  placeholder="Select Or Search  customer Name "
+                  popupMatchSelectWidth={false}
+                  showSearch
+                  name="customer"
+                  filterOption={(input, option) =>
+                    option.children
+                      .toString()
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  value={updateFormData?.customer || undefined}
+                  onChange={(value) => handleAntInputDSelect("customer", value)}
+                >
+                  {users.map((user) => (
+                    <Select.Option key={user._id} value={user._id}>
+                      {user.full_name}
+                    </Select.Option>
+                  ))}
+                </Select>
                 {errors.customer && (
                   <p className="text-red-500 text-sm mt-1">{errors.customer}</p>
                 )}
@@ -810,21 +879,33 @@ const Pigme = () => {
                   Select Maturity period{" "}
                   <span className="text-red-500 ">*</span>
                 </label>
-                <select
+                <Select
+                  className={`bg-gray-50 border border-gray-300 ${fieldSize.height} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5`}
+                  placeholder="Select Or Search  customer Name "
+                  popupMatchSelectWidth={false}
+                  showSearch
                   name="maturity_period"
-                  id="maturity_period"
-                  value={updateFormData.maturity_period}
-                  onChange={handleInputChange}
-                  required
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
+                  filterOption={(input, option) =>
+                    option.children
+                      .toString()
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  value={updateFormData?.maturity_period || undefined}
+                  onChange={(value) =>
+                    handleAntInputDSelect("maturity_period", value)
+                  }
                 >
-                  <option value="" selected hidden>
-                    Select Maturity Period
-                  </option>
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
+                 
+                  {["Daily", "Weekly", "Monthly"].map((maturity) => (
+                    <Select.Option
+                      key={maturity}
+                      value={maturity?.toLowerCase()}
+                    >
+                      {maturity}
+                    </Select.Option>
+                  ))}
+                </Select>
                 {errors.maturity_period && (
                   <p className="text-red-500 text-sm mt-1">
                     {errors.maturity_period}
