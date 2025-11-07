@@ -376,6 +376,7 @@ const Pigme = () => {
   const columns = [
     { key: "id", header: "SL. NO" },
     { key: "customer_name", header: "Customer Name" },
+    {key: "pigme_id", header: "Pigme ID"},
     { key: "maturity_period", header: "Maturity Period" },
     { key: "maturity_interest", header: "Maturity Interest" },
     { key: "referred_type", header: "Referred Type" },
@@ -483,7 +484,7 @@ const Pigme = () => {
                 >
                   {users.map((user) => (
                     <Select.Option key={user._id} value={user._id}>
-                      {user.full_name}
+                     {user.customer_id} | {user.full_name} | {user.phone_number} 
                     </Select.Option>
                   ))}
                 </Select>

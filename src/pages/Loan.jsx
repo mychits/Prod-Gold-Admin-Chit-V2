@@ -478,7 +478,7 @@ const Loan = () => {
                 >
                   {users.map((user) => (
                     <Select.Option key={user._id} value={user._id}>
-                      {user.full_name}
+                     {user.customer_id} | {user.full_name} | {user.phone_number} 
                     </Select.Option>
                   ))}
                 </Select>
