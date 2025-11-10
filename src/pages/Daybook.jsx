@@ -231,6 +231,7 @@ const Daybook = () => {
   };
 
   useEffect(() => {
+    const abortController = new AbortController();
     const fetchPayments = async () => {
       try {
         setIsLoading(true);
@@ -244,7 +245,8 @@ const Daybook = () => {
             collected_by: collectionAgent,
             admin_type: collectionAdmin,
           },
-        });
+          signal:abortController.signal
+        },);
         if (response.data && response.data.length > 0) {
           setFilteredAuction(response.data);
           const paymentData = response.data;
@@ -329,15 +331,19 @@ const Daybook = () => {
           setFilteredAuction([]);
         }
       } catch (error) {
-        console.error("Error fetching payment data:", error);
-        setFilteredAuction([]);
+       
+     setFilteredAuction([]);
         setPayments(0);
+      
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchPayments();
+    return ()=>{
+      abortController.abort();
+    }
   }, [
     selectedAuctionGroupId,
     selectedDate,
