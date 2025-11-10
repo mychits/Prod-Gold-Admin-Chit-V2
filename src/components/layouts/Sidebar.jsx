@@ -357,7 +357,7 @@ const MenuSidebar = [
       {
         id: "#1",
         title: "Gold Admin",
-        link: "http://gold-admin-web.s3-website.eu-north-1.amazonaws.com/",
+        link: "http://prod-new-gold-chit.s3-website.eu-north-1.amazonaws.com/",
         newTab: true,
       },
       {
