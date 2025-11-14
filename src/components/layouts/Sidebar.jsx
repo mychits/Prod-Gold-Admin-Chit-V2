@@ -356,8 +356,8 @@ const MenuSidebar = [
     submenuItems: [
       {
         id: "#1",
-        title: "Gold Admin",
-        link: "http://prod-new-gold-chit.s3-website.eu-north-1.amazonaws.com/",
+        title: "Chit Admin",
+        link: "http://prod-chit.s3-website.eu-north-1.amazonaws.com/",
         newTab: true,
       },
       {

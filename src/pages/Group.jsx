@@ -185,7 +185,7 @@ const Group = () => {
     // navigator.clipboard.writeText(
     //   location.origin + `/enrollment-request-form/?group_id=${groupId}`
     // );
-    const baseUrl = "http://prod-chit.s3-website.eu-north-1.amazonaws.com";
+    const baseUrl = "http://prod-new-gold-chit.s3-website.eu-north-1.amazonaws.com";
     const fullUrl = `${baseUrl}/enrollment-request-form/?group_id=${groupId}`;
     // navigator.clipboard.writeText(fullUrl);
     window.open(fullUrl, "_blank");

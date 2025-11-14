@@ -10,7 +10,7 @@ const PaymentLinkMenu = () => {
   const paymentInLinkMenuCategories = [
     {
       id: "#1",
-      title: "Chit Payment Link",
+      title: "Gold Chit Payment Link",
       description: "Manage customer chit payment link transaction information.",
       subtitle: "Individual Mode",
       icon: <MdAddLink size={28} className="text-green-600" />,
@@ -22,7 +22,7 @@ const PaymentLinkMenu = () => {
     },
     {
       id: "#2",
-      title: "Bulk Chit Payment Link",
+      title: "Bulk Gold Chit Payment Link",
       description: "Manage customer Bulk chit payment link transaction information.",
       subtitle: "Bulk Mode",
       icon: <PiLinkSimpleBreakFill size={28} className="text-green-600" />,

@@ -59,7 +59,7 @@ const PayOutOthers = () => {
    
     {
       key: "#1",
-      title: "Chit Cancellation",
+      title: "Gold Chit Cancellation",
       value: "Chit Cancellation",
     },
     {
